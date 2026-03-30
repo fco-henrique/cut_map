@@ -1,5 +1,6 @@
 import 'package:cut_map/commom/extensions/sizes.dart';
 import 'package:cut_map/commom/routes/named_routes.dart';
+import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
 import 'package:cut_map/features/splash/splash_screen.dart';
 import 'package:cut_map/features/welcome/welcome_screen.dart';
 import 'package:flutter/material.dart';
@@ -12,10 +13,11 @@ class App extends StatelessWidget {
     Sizes.init(context);
 
     return MaterialApp(
-      initialRoute: NamedRoutes.splash,
+      initialRoute: NamedRoutes.signUp,
       routes: {
         NamedRoutes.splash: (context) => SplashScreen(),
         NamedRoutes.welcome: (context) => WelcomeScreen(),
+        NamedRoutes.signUp: (context) => SignUpScreen(),
       },
     );
   }
