@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:cut_map/commom/constants/app_colors.dart';
 import 'package:cut_map/commom/constants/app_fonts.dart';
 import 'package:cut_map/commom/extensions/sizes.dart';
+import 'package:cut_map/commom/validators/inputs_validator.dart';
 import 'package:cut_map/commom/widgets/custom_codig_form_field.dart';
 import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
 import 'package:flutter/gestures.dart';
@@ -16,6 +18,9 @@ class VerifyEmailScreen extends StatefulWidget {
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+  final _codigController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
   Timer? _timer;
   int _start = 60;
   bool _canResend = false;
@@ -48,6 +53,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _codigController.dispose();
     super.dispose();
   }
 
@@ -127,9 +133,16 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             SizedBox(height: 60.h),
             Padding(
               padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
-              child: CustomCodigFormField(),
+              child: Form(
+                key: _formKey,
+                child: CustomCodigFormField(
+                  validator: InputsValidator.codig,
+                  controller: _codigController,
+                ),
+              ),
             ),
 
+            SizedBox(height: 10.h),
             Padding(
               padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
               child: Text.rich(
@@ -162,6 +175,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               child: CustomPrimaryButtom(
                 text: "Verificar",
                 color: AppColors.yellow,
+                onPressed: () {
+                  final valid = _formKey.currentState?.validate() ?? false;
+
+                  if (valid) {
+                    log("Verificar código: ${_codigController.text}");
+                  }
+                },
               ),
             ),
           ],

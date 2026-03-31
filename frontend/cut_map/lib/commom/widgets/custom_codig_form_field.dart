@@ -8,6 +8,7 @@ class CustomCodigFormField extends StatefulWidget {
   final String? helperText;
   final TextEditingController? controller;
   final int? maxLength;
+  final FormFieldValidator<String>? validator;
 
   const CustomCodigFormField({
     super.key,
@@ -16,6 +17,7 @@ class CustomCodigFormField extends StatefulWidget {
     this.helperText,
     this.controller,
     this.maxLength,
+    this.validator,
   });
 
   @override
@@ -27,6 +29,7 @@ class _CustomCodigFormFieldState extends State<CustomCodigFormField> {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: widget.controller ?? TextEditingController(),
+      validator: widget.validator,
       textAlign: TextAlign.center,
       style: AppFonts.bold24.apply(color: AppColors.white),
       cursorColor: AppColors.white,
