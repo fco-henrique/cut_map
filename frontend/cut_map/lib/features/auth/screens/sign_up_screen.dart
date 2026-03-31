@@ -4,10 +4,32 @@ import 'package:cut_map/commom/extensions/sizes.dart';
 import 'package:cut_map/commom/widgets/custom_password_form_field.dart';
 import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
 import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
+import 'package:cut_map/commom/validators/inputs_validator.dart';
 import 'package:flutter/material.dart';
 
-class SignUpScreen extends StatelessWidget {
+class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
+
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,21 +77,35 @@ class SignUpScreen extends StatelessWidget {
 
             SizedBox(height: 30.h),
             Form(
+              key: _formKey,
               child: Column(
                 children: [
-                  CustomTextFormField(hintText: "username", labelText: "Nome"),
+                  CustomTextFormField(
+                    hintText: "username",
+                    labelText: "Nome",
+                    validator: InputsValidator.name,
+                    textEditingController: _nameController,
+                  ),
                   CustomTextFormField(
                     hintText: "e-mail",
                     labelText: "E-mail",
                     textInputType: TextInputType.emailAddress,
+                    validator: InputsValidator.email,
+                    textEditingController: _emailController,
                   ),
                   CustomPasswordFormField(
                     hintText: "••••••••",
                     labelText: "Password",
+                    validator: InputsValidator.password,
+                    textEditingController: _passwordController,
                   ),
                   CustomTextFormField(
                     hintText: "••••••••",
                     labelText: "Confirm Password",
+                    validator: InputsValidator.comparePassword(
+                      _passwordController,
+                    ),
+                    textEditingController: _confirmPasswordController,
                   ),
                 ],
               ),
@@ -114,6 +150,9 @@ class SignUpScreen extends StatelessWidget {
               child: CustomPrimaryButtom(
                 text: "Cria Conta",
                 color: AppColors.yellow,
+                onPressed: () {
+                  final valid = _formKey.currentState?.validate() ?? false;
+                },
               ),
             ),
 
