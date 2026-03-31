@@ -1,11 +1,13 @@
 import 'package:cut_map/commom/constants/app_colors.dart';
 import 'package:cut_map/commom/constants/app_fonts.dart';
 import 'package:cut_map/commom/extensions/sizes.dart';
+import 'package:cut_map/commom/routes/named_routes.dart';
 import 'package:cut_map/commom/widgets/custom_password_form_field.dart';
 import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
 import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
 import 'package:cut_map/commom/validators/inputs_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -99,13 +101,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     validator: InputsValidator.password,
                     textEditingController: _passwordController,
                   ),
-                  CustomTextFormField(
+                  CustomPasswordFormField(
                     hintText: "••••••••",
                     labelText: "Confirm Password",
                     validator: InputsValidator.comparePassword(
                       _passwordController,
                     ),
                     textEditingController: _confirmPasswordController,
+                    canTogglePassword: false,
                   ),
                 ],
               ),
@@ -152,6 +155,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 color: AppColors.yellow,
                 onPressed: () {
                   final valid = _formKey.currentState?.validate() ?? false;
+
+                  if (valid) {
+                    context.push(NamedRoutes.emailVerify);
+                  }
                 },
               ),
             ),
