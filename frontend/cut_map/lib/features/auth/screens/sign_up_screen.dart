@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cut_map/commom/constants/app_colors.dart';
 import 'package:cut_map/commom/constants/app_fonts.dart';
 import 'package:cut_map/commom/extensions/sizes.dart';
@@ -6,6 +8,9 @@ import 'package:cut_map/commom/widgets/custom_password_form_field.dart';
 import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
 import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
 import 'package:cut_map/commom/validators/inputs_validator.dart';
+import 'package:cut_map/features/auth/controllers/sign_up_controller.dart';
+import 'package:cut_map/features/auth/states/sign_up_state.dart';
+import 'package:cut_map/locator.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,6 +28,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
+
+  final _controller = locator.get<SignUpScreenController>();
+
+  @override
+  void initState() {
+    _controller.addListener(() {
+      if (_controller.state is SignUpScreenSuccessState) {
+        log("deu certo, redirecionando para verify");
+        context.push(NamedRoutes.emailVerify);
+      }
+    });
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -157,7 +175,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   final valid = _formKey.currentState?.validate() ?? false;
 
                   if (valid) {
-                    context.push(NamedRoutes.emailVerify);
+                    log("prosseguindo com a criação da conta");
+                    _controller.signUp(
+                      name: _nameController.text,
+                      email: _emailController.text,
+                      password: _passwordController.text,
+                    );
                   }
                 },
               ),
