@@ -6,7 +6,7 @@ class ApiClient {
   final TokenStorage storage;
 
   ApiClient({required this.storage}) : dio = Dio() {
-    dio.options = BaseOptions(baseUrl: 'http://10.0.2.2:8000');
+    dio.options = BaseOptions(baseUrl: 'http://10.0.2.2:3000');
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
