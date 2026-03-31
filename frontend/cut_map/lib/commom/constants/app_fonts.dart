@@ -23,9 +23,19 @@ class AppFonts {
     fontSize: 12,
     fontWeight: FontWeight.w400,
   );
+  static const TextStyle semiBold20 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+  );
   static const TextStyle bold26 = TextStyle(
     fontFamily: 'Roboto',
     fontSize: 26,
+    fontWeight: FontWeight.bold,
+  );
+  static const TextStyle bold24 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 24,
     fontWeight: FontWeight.bold,
   );
   static const TextStyle bold16 = TextStyle(
