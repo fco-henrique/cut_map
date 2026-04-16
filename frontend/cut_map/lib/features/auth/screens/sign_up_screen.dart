@@ -82,7 +82,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 50),
+                  SizedBox(height: 30),
                   Text(
                     "Cria conta",
                     style: AppFonts.bold26.apply(color: AppColors.white),
@@ -195,7 +195,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   style: AppFonts.regular14.apply(color: AppColors.gray),
                 ),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    context.push(NamedRoutes.signIn);
+                  },
                   child: Text(
                     "Entrar",
                     style: AppFonts.bold14.apply(color: AppColors.yellow),
