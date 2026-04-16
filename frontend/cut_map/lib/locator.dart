@@ -1,3 +1,4 @@
+import 'package:cut_map/features/auth/controllers/sign_in_controller.dart';
 import 'package:cut_map/features/auth/controllers/sign_up_controller.dart';
 import 'package:cut_map/features/auth/services/auth_service.dart';
 import 'package:cut_map/services/api_client.dart';
@@ -14,4 +15,5 @@ void setupLocator() {
 
   // CONTROLLERS
   locator.registerFactory(() => SignUpScreenController(authService: locator<AuthService>()));
+  locator.registerFactory(() => SignInScreenController(authService: locator<AuthService>()));
 }
