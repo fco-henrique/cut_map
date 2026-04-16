@@ -1,5 +1,6 @@
 import 'package:cut_map/commom/extensions/sizes.dart';
 import 'package:cut_map/commom/routes/named_routes.dart';
+import 'package:cut_map/features/auth/screens/sign_in_screen.dart';
 import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
 import 'package:cut_map/features/auth/screens/verify_email_screen.dart';
 import 'package:cut_map/features/splash/splash_screen.dart';
@@ -22,7 +23,7 @@ class App extends StatelessWidget {
 }
 
 final _router = GoRouter(
-  initialLocation: NamedRoutes.signUp,
+  initialLocation: NamedRoutes.signIn,
   routes: [
     GoRoute(
       path: NamedRoutes.splash,
@@ -35,6 +36,10 @@ final _router = GoRouter(
     GoRoute(
       path: NamedRoutes.signUp,
       builder: (context, state) => const SignUpScreen(),
+    ),
+    GoRoute(
+      path: NamedRoutes.signIn,
+      builder: (context, state) => const SignInScreen(),
     ),
     GoRoute(
       path: NamedRoutes.emailVerify,
