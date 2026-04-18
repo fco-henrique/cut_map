@@ -7,7 +7,8 @@ import 'package:flutter/foundation.dart';
 class SignUpScreenController extends ChangeNotifier {
   final AuthService _authService;
 
-  SignUpScreenController({required AuthService authService}) : _authService = authService;
+  SignUpScreenController({required AuthService authService})
+    : _authService = authService;
 
   SignUpScreenState _state = SignUpScreenInitialState();
   SignUpScreenState get state => _state;
@@ -22,7 +23,9 @@ class SignUpScreenController extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    log("Os dados chegaram no controller name: $name email: $email password: $password");
+    log(
+      "Os dados chegaram no controller name: $name email: $email password: $password",
+    );
     _changeState(SignUpScreenLoadingState());
     try {
       await _authService.signUp(
@@ -40,7 +43,11 @@ class SignUpScreenController extends ChangeNotifier {
     } catch (e) {
       final errorMessage = e.toString();
 
-      final isServerDown = errorMessage.contains('Não foi possível conectar');
+      final isServerDown =
+          errorMessage.contains('Não foi possível conectar') ||
+          errorMessage.contains('Servidor demorou a responder') ||
+          errorMessage.contains('offline');
+
       log('Erro inesperado no controller: $e');
       _changeState(
         SignUpScreenErrorState(

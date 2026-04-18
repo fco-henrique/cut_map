@@ -29,7 +29,11 @@ class SignInScreenController extends ChangeNotifier {
     } catch (e) {
       final errorMessage = e.toString();
 
-      final isServerDown = errorMessage.contains('Não foi possível conectar');
+      final isServerDown =
+          errorMessage.contains('Não foi possível conectar') ||
+          errorMessage.contains('Servidor demorou a responder') ||
+          errorMessage.contains('offline');
+          
       log('Erro inesperado no controller: $e');
       _changeState(
         SignInScreenErrorState(

@@ -36,6 +36,13 @@ class AuthService with ChangeNotifier {
       log("Usuário criado com sucesso: ${response.data}");
     } on DioException catch (e) {
       log("Erro do servidor: ${e.response?.data}");
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        
+        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+      }
 
       String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
 
@@ -77,11 +84,20 @@ class AuthService with ChangeNotifier {
         log("refreshToken: ${response.data['refreshToken']}");
       }
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        
+        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+      }
+
       if (e.response != null && e.response?.data != null) {
         final errorDetail =
             e.response?.data['message'] ?? e.response?.data['detail'];
         throw errorDetail ?? 'Credenciais inválidas';
       }
+
       throw 'Não foi possível conectar ao servidor. Verifique sua conexão.';
     } catch (e) {
       throw 'Ocorreu um erro inesperado: ${e.toString()}';
