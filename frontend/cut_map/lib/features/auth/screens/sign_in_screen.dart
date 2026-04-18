@@ -40,11 +40,11 @@ class _SignInScreenState extends State<SignInScreen> {
     super.initState();
 
     _controller.addListener(() {
+      if (!mounted) return;
+
       final state = _controller.state;
 
-      if (state is SignInScreenSuccessState) {
-        context.push(NamedRoutes.welcome);
-      } else if (state is SignInScreenErrorState) {
+      if (state is SignInScreenErrorState) {
         CustomSnackbar.show(
           context,
           title: state.isServerDown
