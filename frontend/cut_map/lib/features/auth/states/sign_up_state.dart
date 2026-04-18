@@ -8,5 +8,7 @@ class SignUpScreenLoadingState extends SignUpScreenState {}
 
 class SignUpScreenErrorState extends SignUpScreenState {
   final String message;
-  SignUpScreenErrorState(this.message);
+  final bool isServerDown;
+
+  SignUpScreenErrorState({required this.message, this.isServerDown = false});
 }

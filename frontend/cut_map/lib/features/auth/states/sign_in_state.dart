@@ -1,9 +1,14 @@
-abstract class SignInState {}
+abstract class SignInScreenState {}
 
-class SignInInitialState extends SignInState {}
+class SignInScreenInitialState extends SignInScreenState {}
 
-class SignInSuccessState extends SignInState {}
+class SignInScreenSuccessState extends SignInScreenState {}
 
-class SignInLoadingState extends SignInState {}
+class SignInScreenLoadingState extends SignInScreenState {}
 
-class SignInErrorState extends SignInState {}
+class SignInScreenErrorState extends SignInScreenState {
+  final String message;
+  final bool isServerDown;
+
+  SignInScreenErrorState({required this.message, this.isServerDown = false});
+}

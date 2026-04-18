@@ -10,25 +10,33 @@ class SignInScreenController extends ChangeNotifier {
   SignInScreenController({required AuthService authService})
     : _authService = authService;
 
-  SignInState _state = SignInInitialState();
-  SignInState get state => _state;
+  SignInScreenState _state = SignInScreenInitialState();
+  SignInScreenState get state => _state;
 
-  void _changeState(SignInState newState) {
+  void _changeState(SignInScreenState newState) {
     _state = newState;
     notifyListeners();
   }
 
   Future<void> signIn(String email, String password) async {
-    _changeState(SignInLoadingState());
+    _changeState(SignInScreenLoadingState());
 
     try {
       await _authService.signIn(email: email, password: password);
       log('Usuário autenticado com sucesso via API com Dio');
 
-      _changeState(SignInSuccessState());
+      _changeState(SignInScreenSuccessState());
     } catch (e) {
+      final errorMessage = e.toString();
+
+      final isServerDown = errorMessage.contains('Não foi possível conectar');
       log('Erro inesperado no controller: $e');
-      _changeState(SignInErrorState());
+      _changeState(
+        SignInScreenErrorState(
+          message: errorMessage,
+          isServerDown: isServerDown,
+        ),
+      );
     }
   }
 }

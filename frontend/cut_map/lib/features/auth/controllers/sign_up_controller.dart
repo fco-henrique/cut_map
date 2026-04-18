@@ -38,10 +38,18 @@ class SignUpScreenController extends ChangeNotifier {
       log("Usuário criado com sucesso via API com Dio");
       _changeState(SignUpScreenSuccessState());
     } catch (e) {
-      log("Erro ao criar usuário: $e");
+      final errorMessage = e.toString();
+
+      final isServerDown = errorMessage.contains('Não foi possível conectar');
+      log('Erro inesperado no controller: $e');
       _changeState(
-        SignUpScreenErrorState(e.toString().replaceFirst("Exception: ", "")),
+        SignUpScreenErrorState(
+          message: errorMessage,
+          isServerDown: isServerDown,
+        ),
       );
+
+      log("Erro ao criar usuário: $e");
     }
   }
 }
