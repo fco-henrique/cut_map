@@ -8,6 +8,7 @@ class CustomPrimaryButtom extends StatelessWidget {
   final String text;
   final Color? color;
   final IconData? icon;
+  final bool isLoading; 
 
   const CustomPrimaryButtom({
     super.key,
@@ -15,6 +16,7 @@ class CustomPrimaryButtom extends StatelessWidget {
     required this.text,
     this.color,
     this.icon,
+    this.isLoading = false, 
   });
 
   final BorderRadius _borderRadius = const BorderRadius.all(
@@ -31,24 +33,36 @@ class CustomPrimaryButtom extends StatelessWidget {
         borderRadius: _borderRadius,
         splashColor: Colors.white.withValues(alpha: 0.3),
         highlightColor: Colors.blue.withValues(alpha: 0.5),
-        onTap: onPressed,
+        onTap: isLoading ? null : onPressed, 
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Text(text, style: AppFonts.bold16.apply(color: Colors.black)),
-            if (icon != null)
-              Positioned(
-                right: 8,
-                child: Container(
-                  width: 50.w,
-                  height: 50.h,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: AppColors.gray, size: 30.s),
+            if (isLoading)
+              const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.black, 
+                  strokeWidth: 2.5,
                 ),
-              ),
+              )
+            else ...[ 
+              Text(text, style: AppFonts.bold16.apply(color: Colors.black)),
+              
+              if (icon != null)
+                Positioned(
+                  right: 8,
+                  child: Container(
+                    width: 50.w,
+                    height: 50.h,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: AppColors.gray, size: 30.s),
+                  ),
+                ),
+            ],
           ],
         ),
       ),
