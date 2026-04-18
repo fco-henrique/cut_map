@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:cut_map/services/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -23,24 +21,17 @@ class AuthService with ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    log(
-      "Os dados chegaram no service name: $name email: $email password: $password",
-    );
-
     try {
-      final response = await api.dio.post(
+      await api.dio.post(
         '/user',
         data: {'name': name, 'email': email, 'password': password},
       );
 
-      log("Usuário criado com sucesso: ${response.data}");
     } on DioException catch (e) {
-      log("Erro do servidor: ${e.response?.data}");
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError) {
-        
         throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
       }
 
@@ -72,7 +63,7 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<void> signIn({required String email, required String password}) async {
+  Future<Map<String, String>> signIn({required String email, required String password}) async {
     try {
       final response = await api.dio.post(
         '/auth/login',
@@ -80,15 +71,25 @@ class AuthService with ChangeNotifier {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log("accessToken: ${response.data['accessToken']}");
-        log("refreshToken: ${response.data['refreshToken']}");
+        final accessToken = response.data['accessToken'];
+        final refreshToken = response.data['refreshToken'];
+
+        if (accessToken == null || refreshToken == null) {
+          throw 'Resposta do servidor não contém tokens válidos.';
+        }
+
+        return {
+          'accessToken': accessToken, 
+          'refreshToken': refreshToken
+        };
       }
+
+      throw 'Falha ao autenticar: código HTTP ${response.statusCode}.';
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError) {
-        
         throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
       }
 
