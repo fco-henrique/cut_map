@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { User } from 'src/user/entities/user.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtService } from '@nestjs/jwt';
@@ -71,5 +71,29 @@ export class AuthService {
     await this.refreshRepo.save(entity);
 
     return token;
+  }
+
+  async refresh(token: string) {
+    await this.jwtService.verifyAsync<{ sub: string; tokenId: string }>(token);
+
+    const tokens = await this.refreshRepo.find({
+      where: { revokedAt: IsNull() },
+      relations: ['user'],
+    });
+
+    for (const stored of tokens) {
+      const match = await argon2.verify(stored.tokenHash, token);
+      if (match) {
+        stored.revokedAt = new Date();
+        await this.refreshRepo.save(stored);
+
+        const accessToken = await this.generateAccessToken(stored.user);
+        const refreshToken = await this.generateRefreshToken(stored.user);
+
+        return { accessToken, refreshToken };
+      }
+    }
+
+    throw new UnauthorizedException('Invalid refresh token');
   }
 }
