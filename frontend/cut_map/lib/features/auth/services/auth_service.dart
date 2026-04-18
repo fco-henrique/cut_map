@@ -26,6 +26,7 @@ class AuthService with ChangeNotifier {
     log(
       "Os dados chegaram no service name: $name email: $email password: $password",
     );
+
     try {
       final response = await api.dio.post(
         '/user',
@@ -41,16 +42,26 @@ class AuthService with ChangeNotifier {
       if (e.response?.data != null) {
         var responseData = e.response!.data;
 
-        if (responseData is Map && responseData.containsKey('detail')) {
-          errorMessage = responseData['detail'];
+        if (responseData is Map) {
+          if (responseData.containsKey('message')) {
+            var messageData = responseData['message'];
+
+            if (messageData is List && messageData.isNotEmpty) {
+              errorMessage = messageData.first.toString();
+            } else {
+              errorMessage = messageData.toString();
+            }
+          } else if (responseData.containsKey('detail')) {
+            errorMessage = responseData['detail'].toString();
+          }
         } else if (responseData is String) {
           errorMessage = responseData;
         }
-      } else if (e.message != null) {
-        errorMessage = e.message!;
       }
 
-      throw Exception(errorMessage);
+      throw errorMessage;
+    } catch (e) {
+      throw 'Ocorreu um erro inesperado: ${e.toString()}';
     }
   }
 
@@ -58,10 +69,7 @@ class AuthService with ChangeNotifier {
     try {
       final response = await api.dio.post(
         '/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -70,12 +78,13 @@ class AuthService with ChangeNotifier {
       }
     } on DioException catch (e) {
       if (e.response != null && e.response?.data != null) {
-        final errorDetail = e.response?.data['message'] ?? e.response?.data['detail'];
+        final errorDetail =
+            e.response?.data['message'] ?? e.response?.data['detail'];
         throw errorDetail ?? 'Credenciais inválidas';
       }
       throw 'Não foi possível conectar ao servidor. Verifique sua conexão.';
     } catch (e) {
       throw 'Ocorreu um erro inesperado: ${e.toString()}';
     }
-}
+  }
 }
