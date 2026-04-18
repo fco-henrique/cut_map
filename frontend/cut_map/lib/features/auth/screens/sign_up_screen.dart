@@ -6,6 +6,7 @@ import 'package:cut_map/commom/extensions/sizes.dart';
 import 'package:cut_map/commom/routes/named_routes.dart';
 import 'package:cut_map/commom/widgets/custom_password_form_field.dart';
 import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
+import 'package:cut_map/commom/widgets/custom_snackbar.dart';
 import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
 import 'package:cut_map/commom/validators/inputs_validator.dart';
 import 'package:cut_map/features/auth/controllers/sign_up_controller.dart';
@@ -34,9 +35,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void initState() {
     _controller.addListener(() {
-      if (_controller.state is SignUpScreenSuccessState) {
-        log("deu certo, redirecionando para verify");
+      final state = _controller.state;
+
+      if (state is SignUpScreenSuccessState) {
         context.push(NamedRoutes.emailVerify);
+      } else if (state is SignUpScreenErrorState) {
+        CustomSnackbar.show(
+          context,
+          title: state.isServerDown
+              ? 'Servidor Indisponível'
+              : 'Falha no Cadastro',
+          message: state.message,
+          type: state.isServerDown
+              ? SnackbarType.unavailable
+              : SnackbarType.error,
+        );
       }
     });
     super.initState();
@@ -167,25 +180,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
             SizedBox(height: 55.h),
             Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
-              child: CustomPrimaryButtom(
-                text: "Cria Conta",
-                color: AppColors.yellow,
-                onPressed: () {
-                  final valid = _formKey.currentState?.validate() ?? false;
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ListenableBuilder(
+                listenable: _controller,
+                builder: (context, child) {
+                  return CustomPrimaryButtom(
+                    text: "Cria Conta",
+                    color: AppColors.yellow,
+                    isLoading: _controller.state is SignUpScreenLoadingState,
+                    onPressed: () {
+                      final valid = _formKey.currentState?.validate() ?? false;
 
-                  if (valid) {
-                    log("prosseguindo com a criação da conta");
-                    _controller.signUp(
-                      name: _nameController.text,
-                      email: _emailController.text,
-                      password: _passwordController.text,
-                    );
-                  }
+                      if (valid) {
+                        log("prosseguindo com a criação da conta");
+                        _controller.signUp(
+                          name: _nameController.text,
+                          email: _emailController.text,
+                          password: _passwordController.text,
+                        );
+                      }
+                    },
+                  );
                 },
               ),
             ),
-
+            
             SizedBox(height: 18.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:cut_map/commom/constants/app_colors.dart';
 import 'package:cut_map/commom/constants/app_fonts.dart';
 import 'package:cut_map/commom/extensions/sizes.dart';
@@ -7,6 +5,7 @@ import 'package:cut_map/commom/routes/named_routes.dart';
 import 'package:cut_map/commom/validators/inputs_validator.dart';
 import 'package:cut_map/commom/widgets/custom_password_form_field.dart';
 import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
+import 'package:cut_map/commom/widgets/custom_snackbar.dart';
 import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
 import 'package:cut_map/features/auth/controllers/sign_in_controller.dart';
 import 'package:cut_map/features/auth/states/sign_in_state.dart';
@@ -41,8 +40,21 @@ class _SignInScreenState extends State<SignInScreen> {
     super.initState();
 
     _controller.addListener(() {
-      if (_controller.state is SignInSuccessState) {
+      final state = _controller.state;
+
+      if (state is SignInScreenSuccessState) {
         context.push(NamedRoutes.welcome);
+      } else if (state is SignInScreenErrorState) {
+        CustomSnackbar.show(
+          context,
+          title: state.isServerDown
+              ? 'Servidor Indisponível'
+              : 'Falha no Login',
+          message: state.message,
+          type: state.isServerDown
+              ? SnackbarType.unavailable
+              : SnackbarType.error,
+        );
       }
     });
   }
@@ -102,6 +114,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ],
               ),
             ),
+
             Padding(
               padding: EdgeInsetsGeometry.symmetric(horizontal: 24.h),
               child: Row(
@@ -122,22 +135,25 @@ class _SignInScreenState extends State<SignInScreen> {
 
             SizedBox(height: 40.h),
             Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
-              child: CustomPrimaryButtom(
-                text: "Entrar",
-                color: AppColors.yellow,
-                onPressed: () {
-                  final valid = _formKey.currentState?.validate() ?? false;
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ListenableBuilder(
+                listenable: _controller,
+                builder: (context, child) {
+                  return CustomPrimaryButtom(
+                    text: "Entrar",
+                    color: AppColors.yellow,
+                    isLoading: _controller.state is SignInScreenLoadingState,
+                    onPressed: () {
+                      final valid = _formKey.currentState?.validate() ?? false;
 
-                  if (valid) {
-                    log("Prosseguindo com o login");
-                    _controller.signIn(
-                      _emailController.text.trim(),
-                      _passwordController.text.trim(),
-                    );
-                  } else {
-                    log("Falha no login");
-                  }
+                      if (valid) {
+                        _controller.signIn(
+                          _emailController.text.trim(),
+                          _passwordController.text.trim(),
+                        );
+                      }
+                    },
+                  );
                 },
               ),
             ),
