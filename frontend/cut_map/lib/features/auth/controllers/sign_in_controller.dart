@@ -1,7 +1,7 @@
-import 'dart:developer';
-
+import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/features/auth/services/auth_service.dart';
 import 'package:cut_map/features/auth/states/sign_in_state.dart';
+import 'package:cut_map/locator.dart';
 import 'package:flutter/foundation.dart';
 
 class SignInScreenController extends ChangeNotifier {
@@ -22,8 +22,16 @@ class SignInScreenController extends ChangeNotifier {
     _changeState(SignInScreenLoadingState());
 
     try {
-      await _authService.signIn(email: email, password: password);
-      log('Usuário autenticado com sucesso via API com Dio');
+      final tokens = await _authService.signIn(
+        email: email,
+        password: password,
+      );
+
+      final authManager = locator.get<AuthManager>();
+      await authManager.login(
+        accessToken: tokens['accessToken']!, 
+        refreshToken: tokens['refreshToken']!,
+      );
 
       _changeState(SignInScreenSuccessState());
     } catch (e) {
@@ -33,8 +41,7 @@ class SignInScreenController extends ChangeNotifier {
           errorMessage.contains('Não foi possível conectar') ||
           errorMessage.contains('Servidor demorou a responder') ||
           errorMessage.contains('offline');
-          
-      log('Erro inesperado no controller: $e');
+
       _changeState(
         SignInScreenErrorState(
           message: errorMessage,
