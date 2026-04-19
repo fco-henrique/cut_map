@@ -1,6 +1,7 @@
 import 'package:cut_map/commom/extensions/sizes.dart';
 import 'package:cut_map/commom/routes/named_routes.dart';
 import 'package:cut_map/features/auth/screens/sign_in_screen.dart';
+import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
 // import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
 import 'package:cut_map/features/auth/screens/verify_email_screen.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
@@ -35,14 +36,24 @@ final _router = GoRouter(
     }
 
     final isLoggedIn = authManager.isLoggedIn;
-    final isGoingToLogin = state.matchedLocation == NamedRoutes.signIn;
-    final isGoingToSplash = state.matchedLocation == NamedRoutes.splash;
 
-    if (!isLoggedIn && !isGoingToLogin) {
+    final publicRoutes = [
+      NamedRoutes.signIn,
+      NamedRoutes.signUp,
+      NamedRoutes.emailVerify,
+    ];
+
+    final isGoingToPublicRoute = publicRoutes.contains(state.matchedLocation);
+
+    if (!isLoggedIn && !isGoingToPublicRoute) {
       return NamedRoutes.signIn;
     }
 
-    if (isLoggedIn && (isGoingToLogin || isGoingToSplash)) {
+    final isGoingToLoginOrSplash =
+        state.matchedLocation == NamedRoutes.signIn ||
+        state.matchedLocation == NamedRoutes.splash;
+
+    if (isLoggedIn && isGoingToLoginOrSplash) {
       return NamedRoutes.welcome;
     }
 
@@ -60,6 +71,10 @@ final _router = GoRouter(
     GoRoute(
       path: NamedRoutes.signIn,
       builder: (context, state) => const SignInScreen(),
+    ),
+    GoRoute(
+      path: NamedRoutes.signUp,
+      builder: (context, state) => const SignUpScreen(),
     ),
     GoRoute(
       path: NamedRoutes.emailVerify,
