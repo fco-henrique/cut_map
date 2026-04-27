@@ -9,17 +9,21 @@ import jwtConfig from './config/jwt.config';
 import { JwtModule } from '@nestjs/jwt';
 import { Argon2Service } from './hashing/argon2.service';
 import { HashingService } from './hashing/hashing.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { EmailModule } from 'src/email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, RefreshToken]),
     ConfigModule.forFeature(jwtConfig),
     JwtModule.registerAsync(jwtConfig.asProvider()),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
     Argon2Service,
+    JwtStrategy,
     {
       provide: HashingService,
       useClass: Argon2Service,
