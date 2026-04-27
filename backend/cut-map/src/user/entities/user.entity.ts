@@ -24,6 +24,12 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   emailVerifiedAt: Date | null;
 
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  emailVerificationCode: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  emailVerificationExpires: Date | null;
+
   //   @Column({ nullable: true })
   //   phone: string;
 
