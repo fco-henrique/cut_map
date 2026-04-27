@@ -4,14 +4,22 @@ import 'dart:developer';
 import 'package:cut_map/commom/constants/app_colors.dart';
 import 'package:cut_map/commom/constants/app_fonts.dart';
 import 'package:cut_map/commom/extensions/sizes.dart';
+import 'package:cut_map/commom/routes/named_routes.dart';
 import 'package:cut_map/commom/validators/inputs_validator.dart';
 import 'package:cut_map/commom/widgets/custom_codig_form_field.dart';
 import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
+import 'package:cut_map/commom/widgets/custom_snackbar.dart';
+import 'package:cut_map/features/auth/controllers/verify_email_controller.dart';
+import 'package:cut_map/features/auth/states/verify_email_state.dart';
+import 'package:cut_map/locator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
-  const VerifyEmailScreen({super.key});
+  final String email;
+
+  const VerifyEmailScreen({super.key, required this.email});
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
@@ -20,6 +28,7 @@ class VerifyEmailScreen extends StatefulWidget {
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final _codigController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final _controller = locator.get<VerifyEmailScreenController>();
 
   Timer? _timer;
   int _start = 60;
@@ -48,6 +57,32 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   void initState() {
     super.initState();
     startTimer();
+
+    _controller.addListener(() {
+      final state = _controller.state;
+
+      if (state is VerifyEmailScreenSuccessState) {
+        context.go(NamedRoutes.welcome);
+      } else if (state is VerifyEmailScreenResendSuccessState) {
+        CustomSnackbar.show(
+          context,
+          title: "Código Reenviado",
+          message: "Verifique sua caixa de entrada e spam.",
+          type: SnackbarType.success, 
+        );
+      } else if (state is VerifyEmailScreenErrorState) {
+        CustomSnackbar.show(
+          context,
+          title: state.isServerDown
+              ? "Servidor Indisponível"
+              : "Falha na Verificação",
+          message: state.message,
+          type: state.isServerDown
+              ? SnackbarType.unavailable
+              : SnackbarType.error,
+        );
+      }
+    });
   }
 
   @override
@@ -118,7 +153,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           ),
                         ),
                         TextSpan(
-                          text: "hevs0015@email.com",
+                          text: widget.email,
                           style: AppFonts.regular16.apply(
                             color: AppColors.yellow,
                           ),
@@ -161,6 +196,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         ..onTap = _canResend
                             ? () {
                                 startTimer();
+                                _controller.resendVerificationEmail(
+                                  widget.email,
+                                );
                               }
                             : null,
                     ),
@@ -179,7 +217,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   final valid = _formKey.currentState?.validate() ?? false;
 
                   if (valid) {
-                    log("Verificar código: ${_codigController.text}");
+                    log("prosseguindo com a verificação do email");
+                    _controller.verifyEmail(
+                      widget.email,
+                      _codigController.text,
+                    );
                   }
                 },
               ),

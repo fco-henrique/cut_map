@@ -26,7 +26,6 @@ class AuthService with ChangeNotifier {
         '/user',
         data: {'name': name, 'email': email, 'password': password},
       );
-
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
@@ -63,7 +62,10 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<Map<String, String>> signIn({required String email, required String password}) async {
+  Future<Map<String, String>> signIn({
+    required String email,
+    required String password,
+  }) async {
     try {
       final response = await api.dio.post(
         '/auth/login',
@@ -78,10 +80,7 @@ class AuthService with ChangeNotifier {
           throw 'Resposta do servidor não contém tokens válidos.';
         }
 
-        return {
-          'accessToken': accessToken, 
-          'refreshToken': refreshToken
-        };
+        return {'accessToken': accessToken, 'refreshToken': refreshToken};
       }
 
       throw 'Falha ao autenticar: código HTTP ${response.statusCode}.';
@@ -100,6 +99,103 @@ class AuthService with ChangeNotifier {
       }
 
       throw 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+    } catch (e) {
+      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+    }
+  }
+
+  Future<Map<String, String>> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final response = await api.dio.post(
+        '/auth/verify-email',
+        data: {'email': email, 'code': code},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final accessToken = response.data['accessToken'];
+        final refreshToken = response.data['refreshToken'];
+
+        if (accessToken == null || refreshToken == null) {
+          throw 'Resposta do servidor não contém tokens válidos.';
+        }
+
+        return {'accessToken': accessToken, 'refreshToken': refreshToken};
+      }
+
+      throw 'Falha ao verificar: código HTTP ${response.statusCode}.';
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+      }
+
+      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
+
+      if (e.response?.data != null) {
+        var responseData = e.response!.data;
+
+        if (responseData is Map) {
+          if (responseData.containsKey('message')) {
+            var messageData = responseData['message'];
+
+            if (messageData is List && messageData.isNotEmpty) {
+              errorMessage = messageData.first.toString();
+            } else {
+              errorMessage = messageData.toString();
+            }
+          } else if (responseData.containsKey('detail')) {
+            errorMessage = responseData['detail'].toString();
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+
+      throw errorMessage;
+    } catch (e) {
+      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+    }
+  }
+
+  Future<void> resendVerificationEmail({required String email}) async {
+    try {
+      await api.dio.post('/auth/resend-verification', data: {'email': email});
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+      }
+
+      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
+
+      if (e.response?.data != null) {
+        var responseData = e.response!.data;
+
+        if (responseData is Map) {
+          if (responseData.containsKey('message')) {
+            var messageData = responseData['message'];
+
+            if (messageData is List && messageData.isNotEmpty) {
+              errorMessage = messageData.first.toString();
+            } else {
+              errorMessage = messageData.toString();
+            }
+          } else if (responseData.containsKey('detail')) {
+            errorMessage = responseData['detail'].toString();
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+
+      throw errorMessage;
     } catch (e) {
       throw 'Ocorreu um erro inesperado: ${e.toString()}';
     }

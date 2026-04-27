@@ -38,7 +38,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final state = _controller.state;
 
       if (state is SignUpScreenSuccessState) {
-        context.push(NamedRoutes.emailVerify);
+        context.push(NamedRoutes.emailVerify, extra: _emailController.text.trim(),);
       } else if (state is SignUpScreenErrorState) {
         CustomSnackbar.show(
           context,
