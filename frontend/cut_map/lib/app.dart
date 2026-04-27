@@ -78,7 +78,11 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: NamedRoutes.emailVerify,
-      builder: (context, state) => const VerifyEmailScreen(),
+      name: NamedRoutes.emailVerify,
+      builder: (context, state) {
+        final email = state.extra as String; 
+        return VerifyEmailScreen(email: email);
+      }
     ),
   ],
 );
