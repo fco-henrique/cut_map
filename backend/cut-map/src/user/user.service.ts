@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { HashingService } from 'src/auth/hashing/hashing.service';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class UserService {
@@ -16,6 +17,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly hashingService: HashingService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -24,14 +26,33 @@ export class UserService {
         createUserDto.password,
       );
 
+      const code = this.emailService.generateVerificationCode();
+
       const user = this.userRepo.create({
         ...createUserDto,
         passwordHash,
+        emailVerificationCode: code,
+        emailVerificationExpires: new Date(Date.now() + 15 * 60 * 1000),
       });
 
       await this.userRepo.save(user);
 
-      return user;
+      try {
+        await this.emailService.sendVerificationCode(
+          user.email,
+          user.name,
+          code,
+        );
+      } catch (emailError) {
+        console.error('Erro ao enviar e-mail de boas-vindas:', emailError);
+        return {
+          message:
+            'Cadastro realizado, mas houve instabilidade no envio do e-mail. Por favor, solicite um novo código na tela de login.',
+          user,
+        };
+      }
+
+      return { message: 'Cadastro realizado. Verifique seu e-mail.', user };
     } catch (error) {
       if (
         error instanceof QueryFailedError &&
