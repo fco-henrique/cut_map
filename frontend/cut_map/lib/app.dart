@@ -1,5 +1,7 @@
 import 'package:cut_map/commom/extensions/sizes.dart';
 import 'package:cut_map/commom/routes/named_routes.dart';
+import 'package:cut_map/features/auth/screens/change_password_screen.dart';
+import 'package:cut_map/features/auth/screens/send_email_screen.dart';
 import 'package:cut_map/features/auth/screens/sign_in_screen.dart';
 import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
 // import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
@@ -25,6 +27,8 @@ class App extends StatelessWidget {
   }
 }
 
+enum VerificationContext { signUp, forgotPassword }
+
 final authManager = locator.get<AuthManager>();
 
 final _router = GoRouter(
@@ -41,6 +45,8 @@ final _router = GoRouter(
       NamedRoutes.signIn,
       NamedRoutes.signUp,
       NamedRoutes.emailVerify,
+      NamedRoutes.sendEmail,
+      NamedRoutes.changePassword,
     ];
 
     final isGoingToPublicRoute = publicRoutes.contains(state.matchedLocation);
@@ -80,9 +86,25 @@ final _router = GoRouter(
       path: NamedRoutes.emailVerify,
       name: NamedRoutes.emailVerify,
       builder: (context, state) {
-        final email = state.extra as String; 
-        return VerifyEmailScreen(email: email);
-      }
+        final data = state.extra as Map<String, dynamic>;
+
+        return VerifyEmailScreen(
+          email: data['email'] as String,
+          context: data['context'] as VerificationContext,
+        );
+      },
+    ),
+    GoRoute(
+      path: NamedRoutes.sendEmail,
+      builder: (context, state) => const SendEmailScreen(),
+    ),
+    GoRoute(
+      path: NamedRoutes.changePassword,
+      name: NamedRoutes.changePassword,
+      builder: (context, state) {
+        final token = state.extra as String;         
+        return ChangePasswordScreen(resetToken: token); 
+      },
     ),
   ],
 );
