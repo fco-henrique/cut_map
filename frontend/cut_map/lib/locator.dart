@@ -1,3 +1,5 @@
+import 'package:cut_map/features/auth/controllers/change_password_controller.dart';
+import 'package:cut_map/features/auth/controllers/send_email_controller.dart';
 import 'package:cut_map/features/auth/controllers/sign_in_controller.dart';
 import 'package:cut_map/features/auth/controllers/sign_up_controller.dart';
 import 'package:cut_map/features/auth/controllers/verify_email_controller.dart';
@@ -36,5 +38,11 @@ void setupLocator() {
   );
   locator.registerFactory(
     () => VerifyEmailScreenController(authService: locator<AuthService>()),
+  );  
+  locator.registerFactory(
+    () => SendEmailScreenController(authService: locator<AuthService>()),
+  );  
+  locator.registerFactory(
+    () => ChangePasswordScreenController(authService: locator<AuthService>()),
   );  
 }
