@@ -200,4 +200,147 @@ class AuthService with ChangeNotifier {
       throw 'Ocorreu um erro inesperado: ${e.toString()}';
     }
   }
+
+  Future<void> forgotPassword({required String email}) async {
+    try {
+      await api.dio.post('/auth/forgot-password', data: {'email': email});
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+      }
+
+      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
+
+      if (e.response?.data != null) {
+        var responseData = e.response!.data;
+
+        if (responseData is Map) {
+          if (responseData.containsKey('message')) {
+            var messageData = responseData['message'];
+
+            if (messageData is List && messageData.isNotEmpty) {
+              errorMessage = messageData.first.toString();
+            } else {
+              errorMessage = messageData.toString();
+            }
+          } else if (responseData.containsKey('detail')) {
+            errorMessage = responseData['detail'].toString();
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+
+      throw errorMessage;
+    } catch (e) {
+      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+    }
+  }
+
+  Future<String> verifyResetPasswordCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final response = await api.dio.post(
+        '/auth/verify-reset-code',
+        data: {'email': email, 'code': code},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final resetToken = response.data['resetToken'];
+        if (resetToken != null) {
+          return resetToken as String;
+        }
+      }
+      throw 'Token de recuperação inválido ou não retornado.';
+
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+      }
+
+      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
+
+      if (e.response?.data != null) {
+        var responseData = e.response!.data;
+
+        if (responseData is Map) {
+          if (responseData.containsKey('message')) {
+            var messageData = responseData['message'];
+
+            if (messageData is List && messageData.isNotEmpty) {
+              errorMessage = messageData.first.toString();
+            } else {
+              errorMessage = messageData.toString();
+            }
+          } else if (responseData.containsKey('detail')) {
+            errorMessage = responseData['detail'].toString();
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+
+      throw errorMessage;
+    } catch (e) {
+      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+    }
+  }
+
+  Future<void> resetPassword({
+    required String resetToken,
+    required String newPassword,
+  }) async {
+    try {
+      await api.dio.post(
+        '/auth/reset-password',
+        data: {'newPassword': newPassword},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $resetToken', 
+          },
+        ),
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+      }
+
+      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
+
+      if (e.response?.data != null) {
+        var responseData = e.response!.data;
+
+        if (responseData is Map) {
+          if (responseData.containsKey('message')) {
+            var messageData = responseData['message'];
+
+            if (messageData is List && messageData.isNotEmpty) {
+              errorMessage = messageData.first.toString();
+            } else {
+              errorMessage = messageData.toString();
+            }
+          } else if (responseData.containsKey('detail')) {
+            errorMessage = responseData['detail'].toString();
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+
+      throw errorMessage;
+    } catch (e) {
+      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+    }
+  }
 }
