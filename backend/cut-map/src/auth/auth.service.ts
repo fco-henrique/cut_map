@@ -13,18 +13,20 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
 import { EmailService } from 'src/email/email.service';
+import { HashingService } from './hashing/hashing.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
-    private userRepo: Repository<User>,
+    private readonly userRepo: Repository<User>,
 
     @InjectRepository(RefreshToken)
-    private refreshRepo: Repository<RefreshToken>,
+    private readonly refreshRepo: Repository<RefreshToken>,
 
-    private jwtService: JwtService,
-    private emailService: EmailService,
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
+    private readonly hashingService: HashingService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -47,6 +49,20 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Credenciais inválidas');
 
     return user;
+  }
+
+  private async generateResetToken(user: User) {
+    return this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+        purpose: 'password_reset',
+      },
+      {
+        expiresIn: '10m',
+        secret: process.env.JWT_RESET_SECRET,
+      },
+    );
   }
 
   private async generateAccessToken(user: User) {
@@ -172,5 +188,75 @@ export class AuthService {
     }
 
     return { message: 'Novo código enviado.' };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) {
+      return { message: 'Se o e-mail existir, um código será enviado.' };
+    }
+
+    const code = this.emailService.generateVerificationCode();
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15);
+
+    await this.userRepo.update(user.id, {
+      resetPasswordCode: code,
+      resetPasswordExpires: expires,
+    });
+
+    await this.emailService.sendVerificationCode(email, user.name, code);
+
+    return { message: 'Código enviado com sucesso.' };
+  }
+
+  async verifyResetCode(email: string, code: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+
+    if (!user) throw new BadRequestException('Usuário não encontrado.');
+    if (!user.resetPasswordCode)
+      throw new BadRequestException('Nenhum código solicitado.');
+
+    if (user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
+      throw new BadRequestException('Código expirado. Solicite novamente.');
+    }
+
+    if (user.resetPasswordCode !== code) {
+      throw new BadRequestException('Código inválido.');
+    }
+
+    await this.userRepo.update(user.id, {
+      resetPasswordCode: null,
+      resetPasswordExpires: null,
+    });
+
+    const resetToken = await this.generateResetToken(user);
+
+    return { resetToken };
+  }
+
+  async resetPassword(resetToken: string, newPassword: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync<{
+        sub: string;
+        purpose: string;
+      }>(resetToken, {
+        secret: process.env.JWT_RESET_SECRET,
+      });
+
+      if (payload.purpose !== 'password_reset') {
+        throw new UnauthorizedException('Token inválido para esta operação.');
+      }
+
+      const passwordHash = await this.hashingService.hash(newPassword);
+
+      await this.userRepo.update(payload.sub, { passwordHash });
+
+      return { message: 'Senha alterada com sucesso!' };
+    } catch {
+      throw new UnauthorizedException(
+        'Sessão expirada. Solicite um novo código.',
+      );
+    }
   }
 }
