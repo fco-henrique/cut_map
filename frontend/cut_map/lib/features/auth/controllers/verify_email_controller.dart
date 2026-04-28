@@ -70,4 +70,31 @@ class VerifyEmailScreenController extends ChangeNotifier {
       );
     }
   }
+
+  Future<void> verifyResetPasswordCode(String email, String code) async {
+    _changeState(VerifyEmailScreenLoadingState());
+
+    try {
+      final resetToken = await _authService.verifyResetPasswordCode(
+        email: email,
+        code: code,
+      );
+
+      _changeState(VerifyEmailScreenResetSuccessState(resetToken));
+    } catch (e) {
+      final errorMessage = e.toString();
+
+      final isServerDown =
+          errorMessage.contains('Não foi possível conectar') ||
+          errorMessage.contains('Servidor demorou a responder') ||
+          errorMessage.contains('offline');
+
+      _changeState(
+        VerifyEmailScreenErrorState(
+          message: errorMessage,
+          isServerDown: isServerDown,
+        ),
+      );
+    }
+  }
 }
