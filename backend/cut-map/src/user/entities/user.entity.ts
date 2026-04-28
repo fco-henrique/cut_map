@@ -15,7 +15,7 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   email: string;
 
   @Column({ select: false })
@@ -29,6 +29,12 @@ export class User {
 
   @Column({ type: 'timestamp', nullable: true })
   emailVerificationExpires: Date | null;
+
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  resetPasswordCode: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordExpires: Date | null;
 
   //   @Column({ nullable: true })
   //   phone: string;
