@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:cut_map/app.dart';
 import 'package:cut_map/commom/constants/app_colors.dart';
 import 'package:cut_map/commom/constants/app_fonts.dart';
 import 'package:cut_map/commom/extensions/sizes.dart';
@@ -18,8 +19,13 @@ import 'package:go_router/go_router.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
+  final VerificationContext context;
 
-  const VerifyEmailScreen({super.key, required this.email});
+  const VerifyEmailScreen({
+    super.key,
+    required this.email,
+    required this.context,
+  });
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
@@ -68,8 +74,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           context,
           title: "Código Reenviado",
           message: "Verifique sua caixa de entrada e spam.",
-          type: SnackbarType.success, 
+          type: SnackbarType.success,
         );
+      } else if (state is VerifyEmailScreenResetSuccessState) {
+        context.push(NamedRoutes.changePassword, extra: state.resetToken);
       } else if (state is VerifyEmailScreenErrorState) {
         CustomSnackbar.show(
           context,
@@ -124,7 +132,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   ),
                   SizedBox(width: 20.w),
                   Text(
-                    "Validar E-mail",
+                    widget.context == VerificationContext.signUp
+                        ? "Validar E-mail"
+                        : "Validar E-mail para recuperação",
                     style: AppFonts.semiBold20.apply(color: AppColors.white),
                   ),
                 ],
@@ -133,7 +143,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
             SizedBox(height: 50.h),
             Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +177,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
             SizedBox(height: 60.h),
             Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Form(
                 key: _formKey,
                 child: CustomCodigFormField(
@@ -179,7 +189,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
             SizedBox(height: 10.h),
             Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Text.rich(
                 TextSpan(
                   children: [
@@ -209,7 +219,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
             SizedBox(height: 50.h),
             Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: CustomPrimaryButtom(
                 text: "Verificar",
                 color: AppColors.yellow,
@@ -217,11 +227,16 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   final valid = _formKey.currentState?.validate() ?? false;
 
                   if (valid) {
-                    log("prosseguindo com a verificação do email");
-                    _controller.verifyEmail(
-                      widget.email,
-                      _codigController.text,
-                    );
+                    final code = _codigController.text;
+
+                    if (widget.context == VerificationContext.signUp) {
+                      log("Verificando código de CADASTRO");
+                      _controller.verifyEmail(widget.email, code);
+                    } else if (widget.context ==
+                        VerificationContext.forgotPassword) {
+                      log("Verificando código de RECUPERAÇÃO DE SENHA");
+                      _controller.verifyResetPasswordCode(widget.email, code);
+                    }
                   }
                 },
               ),

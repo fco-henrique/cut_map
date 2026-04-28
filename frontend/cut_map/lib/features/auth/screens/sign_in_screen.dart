@@ -122,7 +122,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   Spacer(),
                   GestureDetector(
                     onTap: () {
-                      context.push(NamedRoutes.emailVerify);
+                      context.push(NamedRoutes.sendEmail);
                     },
                     child: Text(
                       "Esqueceu sua senha?",
