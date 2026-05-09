@@ -10,11 +10,20 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from 'src/auth/interfaces/jwt-payload.interface';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('me')
+  getMe(@CurrentUser() user: AuthenticatedUser) {
+    return user;
+  }
+
+  @Public()
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);

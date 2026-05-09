@@ -41,7 +41,7 @@ export class AuthService {
   async validateUser(email: string, password: string) {
     const user = await this.userRepo.findOne({
       where: { email },
-      select: ['id', 'email', 'passwordHash'],
+      select: ['id', 'email', 'name', 'passwordHash'],
     });
     if (!user) throw new UnauthorizedException('Credenciais inválidas');
 
@@ -70,6 +70,7 @@ export class AuthService {
       {
         sub: user.id,
         email: user.email,
+        name: user.name,
       },
       { expiresIn: '15m' },
     );
