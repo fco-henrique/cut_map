@@ -85,7 +85,9 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(40)),
                     ),
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        context.go(NamedRoutes.signIn);
+                      },
                       icon: Icon(
                         Icons.arrow_back,
                         color: AppColors.white,
@@ -143,15 +145,21 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
             SizedBox(height: 10.h),
             Padding(
               padding: EdgeInsetsGeometry.symmetric(horizontal: 24),
-              child: CustomPrimaryButtom(
-                text: "Verificar",
-                color: AppColors.yellow,
-                onPressed: () {
-                  final valid = _formKey.currentState?.validate() ?? false;
+              child: ListenableBuilder(
+                listenable: _controller,
+                builder: (context, child) {
+                  return CustomPrimaryButtom(
+                    text: "Verificar",
+                    color: AppColors.yellow,
+                    isLoading: _controller.state is SendEmailScreenLoadingState,
+                    onPressed: () {
+                      final valid = _formKey.currentState?.validate() ?? false;
 
-                  if (valid) {
-                    _controller.forgotPassword(_emailController.text);
-                  }
+                      if (valid) {
+                        _controller.forgotPassword(_emailController.text);
+                      }
+                    },
+                  );
                 },
               ),
             ),

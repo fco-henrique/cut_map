@@ -108,7 +108,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   CustomPasswordFormField(
                     labelText: "Senha",
                     hintText: "••••••••",
-                    validator: InputsValidator.password,
+                    validator: InputsValidator.passwordLogin,
                     textEditingController: _passwordController,
                   ),
                 ],

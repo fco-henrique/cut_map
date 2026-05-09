@@ -82,7 +82,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(40)),
                     ),
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        context.pop();
+                      },
                       icon: Icon(
                         Icons.arrow_back,
                         color: AppColors.white,
@@ -126,31 +128,24 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             SizedBox(height: 55.h),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              // child: ListenableBuilder(
-              //   listenable: _controller,
-              //   builder: (context, child) {
-              //     return CustomPrimaryButtom(
-              //       text: "Cria Conta",
-              //       color: AppColors.yellow,
-              //       isLoading: _controller.state is SignUpScreenLoadingState,
-              //       onPressed: () {
-              //         final valid = _formKey.currentState?.validate() ?? false;
+              child: ListenableBuilder(
+                listenable: _controller,
+                builder: (context, child) {
+                  return CustomPrimaryButtom(
+                    text: "Alterar senha",
+                    color: AppColors.yellow,
+                    isLoading: _controller.state is ChangePasswordScreenLoadingState,
+                    onPressed: () {
+                      final valid = _formKey.currentState?.validate() ?? false;
 
-              //         if (valid) {
-
-              //         }
-              //     );
-              //   },
-              // ),
-              child: CustomPrimaryButtom(
-                text: "Alterar senha",
-                color: AppColors.yellow,
-                onPressed: () {
-                  final valid = _formKey.currentState?.validate() ?? false;
-
-                  if (valid) {
-                    _controller.resetPassword(resetToken: widget.resetToken, newPassword: _passwordController.text);
-                  }
+                      if (valid) {
+                        _controller.resetPassword(
+                          resetToken: widget.resetToken,
+                          newPassword: _passwordController.text,
+                        );
+                      }
+                    },
+                  );
                 },
               ),
             ),

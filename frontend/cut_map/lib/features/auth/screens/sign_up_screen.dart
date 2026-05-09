@@ -94,7 +94,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(40)),
                     ),
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        context.pop();
+                      },
                       icon: Icon(
                         Icons.arrow_back,
                         color: AppColors.white,

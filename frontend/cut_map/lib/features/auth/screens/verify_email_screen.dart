@@ -122,7 +122,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(40)),
                     ),
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        if (widget.context == VerificationContext.signUp) {
+                          context.pop();
+                        } else if (widget.context ==
+                            VerificationContext.forgotPassword) {
+                          context.go(NamedRoutes.sendEmail);
+                        }
+                      },
                       icon: Icon(
                         Icons.arrow_back,
                         color: AppColors.white,
@@ -220,24 +227,33 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             SizedBox(height: 50.h),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
-              child: CustomPrimaryButtom(
-                text: "Verificar",
-                color: AppColors.yellow,
-                onPressed: () {
-                  final valid = _formKey.currentState?.validate() ?? false;
+              child: ListenableBuilder(
+                listenable: _controller,
+                builder: (context, child) {
+                  return CustomPrimaryButtom(
+                    text: "Verificar",
+                    color: AppColors.yellow,
+                    isLoading: _controller.state is VerifyEmailScreenLoadingState,
+                    onPressed: () {
+                      final valid = _formKey.currentState?.validate() ?? false;
 
-                  if (valid) {
-                    final code = _codigController.text;
+                      if (valid) {
+                        final code = _codigController.text;
 
-                    if (widget.context == VerificationContext.signUp) {
-                      log("Verificando código de CADASTRO");
-                      _controller.verifyEmail(widget.email, code);
-                    } else if (widget.context ==
-                        VerificationContext.forgotPassword) {
-                      log("Verificando código de RECUPERAÇÃO DE SENHA");
-                      _controller.verifyResetPasswordCode(widget.email, code);
-                    }
-                  }
+                        if (widget.context == VerificationContext.signUp) {
+                          log("Verificando código de CADASTRO");
+                          _controller.verifyEmail(widget.email, code);
+                        } else if (widget.context ==
+                            VerificationContext.forgotPassword) {
+                          log("Verificando código de RECUPERAÇÃO DE SENHA");
+                          _controller.verifyResetPasswordCode(
+                            widget.email,
+                            code,
+                          );
+                        }
+                      }
+                    },
+                  );
                 },
               ),
             ),
