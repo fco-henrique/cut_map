@@ -1,5 +1,6 @@
 import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/widgets/custom_snackbar.dart';
+import 'package:cut_map/features/auth/services/auth_manager.dart';
+import 'package:cut_map/locator.dart';
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -11,15 +12,11 @@ class WelcomeScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Center(
         child: ElevatedButton(
-          onPressed: () {
-            CustomSnackbar.show(
-              context,
-              title: 'Saved Successfully',
-              message: 'Your changes have been saved successfully',
-              type: SnackbarType.unavailable,
-            );
+          onPressed: ()  async {
+            final authManager = locator.get<AuthManager>();            
+            await authManager.logout();
           },
-          child: const Text('Salvar'),
+          child: const Text('Sair'),
         ),
       ),
     );
