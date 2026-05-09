@@ -34,6 +34,7 @@ export class AuthController {
     return this.authService.verifyEmail(dto.email, dto.code);
   }
 
+  @Public()
   @Post('resend-verification')
   resendCode(@Body() dto: ResendCodeDto) {
     return this.authService.resendVerificationCode(dto.email);
