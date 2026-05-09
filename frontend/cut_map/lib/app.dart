@@ -72,61 +72,59 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: NamedRoutes.welcome,
-      builder: (context, state) => const WelcomeScreen(),
+      name: NamedRoutes.welcome,
+      pageBuilder: (context, state) {
+        return transition(state, const WelcomeScreen());
+      },
     ),
     GoRoute(
       path: NamedRoutes.signIn,
-      builder: (context, state) => const SignInScreen(),
+      pageBuilder: (context, state) => transition(state, const SignInScreen()),
     ),
     GoRoute(
       path: NamedRoutes.signUp,
-      builder: (context, state) => const SignUpScreen(),
+      pageBuilder: (context, state) => transition(state, const SignUpScreen()),
     ),
     GoRoute(
       path: NamedRoutes.emailVerify,
       name: NamedRoutes.emailVerify,
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final data = state.extra as Map<String, dynamic>;
 
-        return VerifyEmailScreen(
-          email: data['email'] as String,
-          context: data['context'] as VerificationContext,
+        return transition(
+          state,
+          VerifyEmailScreen(
+            email: data['email'] as String,
+            context: data['context'] as VerificationContext,
+          ),
         );
       },
     ),
     GoRoute(
       path: NamedRoutes.sendEmail,
-      builder: (context, state) => const SendEmailScreen(),
+      pageBuilder: (context, state) =>
+          transition(state, const SendEmailScreen()),
     ),
     GoRoute(
       path: NamedRoutes.changePassword,
       name: NamedRoutes.changePassword,
-      builder: (context, state) {
-        final token = state.extra as String;         
-        return ChangePasswordScreen(resetToken: token); 
+      pageBuilder: (context, state) {
+        final token = state.extra as String;
+        return transition(state, ChangePasswordScreen(resetToken: token));
       },
     ),
   ],
 );
 
-
-// GoRoute(
-    //   path: '/welcome',
-    //   name: NamedRoutes.welcome,
-    //   pageBuilder: (context, state) {
-    //     return CustomTransitionPage(
-    //       key: state.pageKey,
-    //       child: const WelcomeScreen(),
-    //       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-    //         return FadeTransition(
-    //           opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
-    //           child: child,
-    //         );
-    //       },
-    //     );
-    //   },
-    // ),
-    // GoRoute(
-    //   path: NamedRoutes.signUp,
-    //   builder: (context, state) => const SignUpScreen(),
-    // ),
+CustomTransitionPage<dynamic> transition(GoRouterState state, Widget child) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
+        child: child,
+      );
+    },
+  );
+}
