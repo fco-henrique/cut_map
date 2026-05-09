@@ -23,6 +23,10 @@ class InputsValidator {
     ),
   ]);
 
+  static FormFieldValidator<String> get passwordLogin => Validatorless.multiple([
+    Validatorless.required('Senha é obrigatória'),
+  ]);
+
   static FormFieldValidator<String> comparePassword(
     TextEditingController controller,
   ) {
