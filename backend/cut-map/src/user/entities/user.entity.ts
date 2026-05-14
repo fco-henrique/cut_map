@@ -1,10 +1,11 @@
+import { BarbershopMember } from 'src/barbershop-member/entities/barbershop-member.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  //   OneToMany,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('users')
@@ -45,8 +46,6 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relacionamento para definir onde ele trabalha ou é dono
-  // Você precisará criar a entidade 'UserBarbershop' para gerenciar os cargos
-  //   @OneToMany(() => UserBarbershop, (userBarbershop) => userBarbershop.user)
-  //   memberships: UserBarbershop[];
+  @OneToMany(() => BarbershopMember, barbershopMember => barbershopMember.user)
+  memberships: BarbershopMember[];
 }
