@@ -87,6 +87,7 @@ export class AuthService {
     const hash = await argon2.hash(token);
 
     const entity = this.refreshRepo.create({
+      id: tokenId,
       tokenHash: hash,
       user,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -98,27 +99,37 @@ export class AuthService {
   }
 
   async refresh(token: string) {
-    await this.jwtService.verifyAsync<{ sub: string; tokenId: string }>(token);
+    const payload = await this.jwtService.verifyAsync<{
+      sub: string;
+      tokenId: string;
+    }>(token);
+    console.log('Payload do refresh token:', payload);
 
-    const tokens = await this.refreshRepo.find({
-      where: { revokedAt: IsNull() },
+    const storedToken = await this.refreshRepo.findOne({
+      where: {
+        id: payload.tokenId,
+        revokedAt: IsNull(),
+      },
       relations: ['user'],
     });
 
-    for (const stored of tokens) {
-      const match = await argon2.verify(stored.tokenHash, token);
-      if (match) {
-        stored.revokedAt = new Date();
-        await this.refreshRepo.save(stored);
-
-        const accessToken = await this.generateAccessToken(stored.user);
-        const refreshToken = await this.generateRefreshToken(stored.user);
-
-        return { accessToken, refreshToken };
-      }
+    if (!storedToken) {
+      throw new UnauthorizedException('Token não encontrado ou já revogado.');
     }
 
-    throw new UnauthorizedException('Invalid refresh token');
+    const match = await argon2.verify(storedToken.tokenHash, token);
+
+    if (!match) {
+      throw new UnauthorizedException('Refresh token inválido.');
+    }
+
+    storedToken.revokedAt = new Date();
+    await this.refreshRepo.save(storedToken);
+
+    const accessToken = await this.generateAccessToken(storedToken.user);
+    const refreshToken = await this.generateRefreshToken(storedToken.user);
+
+    return { accessToken, refreshToken };
   }
 
   async verifyEmail(email: string, code: string) {
