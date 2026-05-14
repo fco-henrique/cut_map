@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
+import { BarbershopModule } from './barbershop/barbershop.module';
+import { BarbershopMemberModule } from './barbershop-member/barbershop-member.module';
 import appConfig from './app.config';
 
 @Module({
@@ -30,6 +32,8 @@ import appConfig from './app.config';
     UserModule,
     AuthModule,
     EmailModule,
+    BarbershopModule,
+    BarbershopMemberModule,
   ],
   controllers: [AppController],
   providers: [AppService],
