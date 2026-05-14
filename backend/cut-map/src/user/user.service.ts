@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -85,7 +86,14 @@ export class UserService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    currentUserId: string,
+  ) {
+    if (id !== currentUserId)
+      throw new UnauthorizedException('Não é permitido alterar outro usuário');
+
     const user = await this.userRepo.findOne({
       where: { id },
     });
@@ -105,7 +113,10 @@ export class UserService {
     return this.userRepo.save(user);
   }
 
-  async remove(id: string) {
+  async remove(id: string, currentUserId: string) {
+    if (id !== currentUserId)
+      throw new UnauthorizedException('Não é permitido remover outro usuário');
+
     const result = await this.userRepo.delete({ id });
 
     if (result.affected === 0)
