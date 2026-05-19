@@ -1,86 +1,85 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBarbershopDto } from './dto/create-barbershop.dto';
 import { UpdateBarbershopDto } from './dto/update-barbershop.dto';
-import { User } from 'src/user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Barbershop } from './entities/barbershop.entity';
-import { In, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import {
   BarbershopMember,
   BarbershopRole,
 } from 'src/barbershop-member/entities/barbershop-member.entity';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class BarbershopService {
   constructor(
     @InjectRepository(Barbershop)
-    private barbershopRepo: Repository<Barbershop>,
+    private readonly barbershopRepo: Repository<Barbershop>,
     @InjectRepository(BarbershopMember)
-    private barbershopMemberRepo: Repository<BarbershopMember>,
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    private readonly barbershopMemberRepo: Repository<BarbershopMember>,
+    private readonly dataSource: DataSource,
+    private readonly userService: UserService,
   ) {}
 
   async create(createBarbershopDto: CreateBarbershopDto, ownerId: string) {
-    const owner = await this.userRepo.findOneBy({
-      id: ownerId,
-    });
+    const owner = await this.userService.findOne(ownerId);
 
-    if (!owner) {
-      throw new UnauthorizedException('Usuário não encontrado');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const barbershop = queryRunner.manager.create(
+        Barbershop,
+        createBarbershopDto,
+      );
+      const savedBarbershop = await queryRunner.manager.save(barbershop);
+
+      const membership = queryRunner.manager.create(BarbershopMember, {
+        user: owner,
+        barbershop: savedBarbershop,
+        role: BarbershopRole.OWNER,
+      });
+
+      await queryRunner.manager.save(membership);
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Barbearia criada com sucesso',
+        barbershop: savedBarbershop,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const barbershop = await this.barbershopRepo.save({
-      ...createBarbershopDto,
-    });
-
-    const mermbership = this.barbershopMemberRepo.create({
-      user: owner,
-      barbershop: barbershop,
-      role: BarbershopRole.OWNER,
-    });
-
-    await this.barbershopMemberRepo.save(mermbership);
-
-    return { message: 'Barbearia criada com sucesso', barbershop };
   }
 
   async findAllMe(ownerId: string) {
     const barbershops = await this.barbershopRepo.find({
       where: { members: { user: { id: ownerId } } },
+      relations: { members: { user: true } },
     });
 
-    if (!barbershops) {
-      throw new NotFoundException(
-        'Barbearias não encontradas para este usuário',
-      );
-    }
-
-    return { message: 'Barbearias encontradas com sucesso', barbershops };
+    return { message: 'Busca realizada com sucesso', barbershops };
   }
 
   async findAll() {
-    const barbershops = await this.barbershopRepo.find();
+    const barbershops = await this.barbershopRepo.find({
+      relations: { members: { user: true } },
+    });
 
-    if (!barbershops) {
-      throw new NotFoundException('Barbearias não encontradas');
-    }
-
-    return { message: 'Barbearias encontradas com sucesso', barbershops };
+    return { message: 'Busca realizada com sucesso', barbershops };
   }
 
-  async findOneMe(barberShopId: string, ownerId: string) {
+  async findOneMe(barbershopId: string, ownerId: string) {
     const barbershop = await this.barbershopRepo.findOne({
       where: {
-        id: barberShopId,
-        members: {
-          user: { id: ownerId },
-        },
+        id: barbershopId,
+        members: { user: { id: ownerId } },
       },
+      relations: { members: { user: true } },
     });
 
     if (!barbershop) {
@@ -90,11 +89,10 @@ export class BarbershopService {
     return { message: 'Barbearia encontrada com sucesso', barbershop };
   }
 
-  async findOne(barberShopId: string) {
+  async findOne(barbershopId: string) {
     const barbershop = await this.barbershopRepo.findOne({
-      where: {
-        id: barberShopId,
-      },
+      where: { id: barbershopId },
+      relations: { members: { user: true } },
     });
 
     if (!barbershop) {
@@ -104,57 +102,35 @@ export class BarbershopService {
     return { message: 'Barbearia encontrada com sucesso', barbershop };
   }
 
-  async update(
-    barberShopId: string,
-    userId: string,
-    updateBarbershopDto: UpdateBarbershopDto,
-  ) {
-    const membership = await this.barbershopMemberRepo.findOne({
-      where: {
-        barbershop: { id: barberShopId },
-        user: { id: userId },
-        role: In([BarbershopRole.OWNER, BarbershopRole.MANAGER]),
-      },
-      relations: ['barbershop'],
+  async update(barbershopId: string, updateBarbershopDto: UpdateBarbershopDto) {
+    const barbershop = await this.barbershopRepo.findOneBy({
+      id: barbershopId,
     });
 
-    if (!membership) {
-      throw new UnauthorizedException(
-        'Barbearia não encontrada ou você não tem permissão para editá-la',
-      );
+    if (!barbershop) {
+      throw new NotFoundException('Barbearia não encontrada');
     }
 
-    Object.assign(membership.barbershop, updateBarbershopDto);
-
-    await this.barbershopRepo.save(membership.barbershop);
+    const updated = this.barbershopRepo.merge(barbershop, updateBarbershopDto);
+    await this.barbershopRepo.save(updated);
 
     return {
       message: 'Barbearia atualizada com sucesso',
-      barbershop: membership.barbershop,
+      barbershop: updated,
     };
   }
 
-  async remove(barberShopId: string, userId: string) {
-    const membership = await this.barbershopMemberRepo.findOne({
-      where: {
-        barbershop: { id: barberShopId },
-        user: { id: userId },
-        role: In([BarbershopRole.OWNER, BarbershopRole.MANAGER]),
-      },
-      relations: ['barbershop'],
+  async remove(barbershopId: string) {
+    const barbershop = await this.barbershopRepo.findOneBy({
+      id: barbershopId,
     });
 
-    if (!membership) {
-      throw new UnauthorizedException(
-        'Barbearia não encontrada ou você não tem permissão para removê-la',
-      );
+    if (!barbershop) {
+      throw new NotFoundException('Barbearia não encontrada');
     }
 
-    const result = await this.barbershopRepo.delete({ id: barberShopId });
+    await this.barbershopRepo.remove(barbershop);
 
-    return {
-      message: 'Barbearia removida com sucesso',
-      result,
-    };
+    return { message: 'Barbearia removida com sucesso' };
   }
 }

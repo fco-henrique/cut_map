@@ -6,13 +6,18 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { BarbershopService } from './barbershop.service';
 import { CreateBarbershopDto } from './dto/create-barbershop.dto';
-import { UpdateBarbershopDto } from './dto/update-barbershop.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { Roles } from 'src/barbershop-member/decorators/roles.decorator';
+import { BarbershopRole } from 'src/barbershop-member/entities/barbershop-member.entity';
+import { UpdateBarbershopDto } from './dto/update-barbershop.dto';
+import { BarbershopRolesGuard } from 'src/barbershop-member/guards/barbershop-roles.guard';
 
 @Controller('barbershop')
+@UseGuards(BarbershopRolesGuard)
 export class BarbershopController {
   constructor(private readonly barbershopService: BarbershopService) {}
 
@@ -34,7 +39,7 @@ export class BarbershopController {
     return this.barbershopService.findAll();
   }
 
-  @Get(':id')
+  @Get('/me/:id')
   findOneMe(
     @Param('id') barberShopId: string,
     @CurrentUser('sub') ownerId: string,
@@ -48,23 +53,18 @@ export class BarbershopController {
   }
 
   @Patch(':id')
+  @Roles(BarbershopRole.OWNER, BarbershopRole.MANAGER)
   update(
-    @Param('id') barberShopId: string,
+    @Param('id') barbershopId: string,
     @CurrentUser('sub') userId: string,
     @Body() updateBarbershopDto: UpdateBarbershopDto,
   ) {
-    return this.barbershopService.update(
-      barberShopId,
-      userId,
-      updateBarbershopDto,
-    );
+    return this.barbershopService.update(barbershopId, updateBarbershopDto);
   }
 
   @Delete(':id')
-  remove(
-    @Param('id') barberShopId: string,
-    @CurrentUser('sub') userId: string,
-  ) {
-    return this.barbershopService.remove(barberShopId, userId);
+  @Roles(BarbershopRole.OWNER)
+  remove(@Param('id') barbershopId: string) {
+    return this.barbershopService.remove(barbershopId);
   }
 }
