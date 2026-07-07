@@ -1,4 +1,4 @@
-import { BarbershopMember } from 'src/barbershop-member/entities/barbershop-member.entity';
+import { BarbershopMember } from 'src/barbershop/entities/barbershop-member.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('barbershops')

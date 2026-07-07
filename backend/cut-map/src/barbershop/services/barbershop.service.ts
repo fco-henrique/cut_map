@@ -7,7 +7,7 @@ import { DataSource, Repository } from 'typeorm';
 import {
   BarbershopMember,
   BarbershopRole,
-} from 'src/barbershop-member/entities/barbershop-member.entity';
+} from 'src/barbershop/entities/barbershop-member.entity';
 import { UserService } from 'src/user/user.service';
 
 @Injectable()
@@ -67,7 +67,7 @@ export class BarbershopService {
 
   async findAll() {
     const barbershops = await this.barbershopRepo.find({
-      relations: { members: { user: true } },
+      // relations: { members: { user: true } },
     });
 
     return { message: 'Busca realizada com sucesso', barbershops };

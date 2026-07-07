@@ -7,12 +7,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-
-export enum BarbershopRole {
-  OWNER = 'OWNER',
-  EMPLOYEE = 'EMPLOYEE',
-  MANAGER = 'MANAGER',
-}
+import { BarbershopRole } from '../enums/barbershop-role.enum';
 
 @Entity('barbershop_member')
 export class BarbershopMember {

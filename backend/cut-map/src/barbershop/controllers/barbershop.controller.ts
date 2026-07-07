@@ -12,7 +12,7 @@ import { BarbershopService } from './barbershop.service';
 import { CreateBarbershopDto } from './dto/create-barbershop.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { Roles } from 'src/barbershop-member/decorators/roles.decorator';
-import { BarbershopRole } from 'src/barbershop-member/entities/barbershop-member.entity';
+import { BarbershopRole } from 'src/barbershop/entities/barbershop-member.entity';
 import { UpdateBarbershopDto } from './dto/update-barbershop.dto';
 import { BarbershopRolesGuard } from 'src/barbershop-member/guards/barbershop-roles.guard';
 
