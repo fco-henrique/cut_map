@@ -55,18 +55,21 @@ export class BarbershopService {
   }
 
   async findAllMe(ownerId: string) {
-    const barbershops = await this.barbershopRepo.find({
-      where: { members: { user: { id: ownerId } } },
-      relations: { members: { user: true } },
-    });
+    const barbershops = await this.barbershopRepo
+      .createQueryBuilder('barbershop')
+      .innerJoinAndSelect(
+        'barbershop.members',
+        'member',
+        'member.user = :userId',
+        { userId: ownerId },
+      )
+      .getMany();
 
     return { message: 'Busca realizada com sucesso', barbershops };
   }
 
   async findAll() {
-    const barbershops = await this.barbershopRepo.find({
-      // relations: { members: { user: true } },
-    });
+    const barbershops = await this.barbershopRepo.find({});
 
     return { message: 'Busca realizada com sucesso', barbershops };
   }

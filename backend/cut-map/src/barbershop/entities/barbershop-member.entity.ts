@@ -21,7 +21,7 @@ export class BarbershopMember {
   barbershop: Barbershop;
 
   @ManyToOne(() => User, user => user.memberships, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'id' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({
