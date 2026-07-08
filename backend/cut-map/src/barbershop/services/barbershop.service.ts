@@ -1,14 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateBarbershopDto } from './dto/create-barbershop.dto';
-import { UpdateBarbershopDto } from './dto/update-barbershop.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Barbershop } from './entities/barbershop.entity';
 import { DataSource, Repository } from 'typeorm';
-import {
-  BarbershopMember,
-  BarbershopRole,
-} from 'src/barbershop/entities/barbershop-member.entity';
+import { BarbershopMember } from 'src/barbershop/entities/barbershop-member.entity';
 import { UserService } from 'src/user/user.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Barbershop } from '../entities/barbershop.entity';
+import { CreateBarbershopDto } from '../dto/create-barbershop.dto';
+import { BarbershopRole } from '../enums/barbershop-role.enum';
+import { UpdateBarbershopDto } from '../dto/update-barbershop.dto';
 
 @Injectable()
 export class BarbershopService {

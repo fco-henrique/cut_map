@@ -8,13 +8,13 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
-import { BarbershopService } from './barbershop.service';
-import { CreateBarbershopDto } from './dto/create-barbershop.dto';
+import { BarbershopRolesGuard } from '../guards/barbershop-roles.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { Roles } from 'src/barbershop-member/decorators/roles.decorator';
-import { BarbershopRole } from 'src/barbershop/entities/barbershop-member.entity';
-import { UpdateBarbershopDto } from './dto/update-barbershop.dto';
-import { BarbershopRolesGuard } from 'src/barbershop-member/guards/barbershop-roles.guard';
+import { CreateBarbershopDto } from '../dto/create-barbershop.dto';
+import { BarbershopService } from '../services/barbershop.service';
+import { BarbershopRole } from '../enums/barbershop-role.enum';
+import { Roles } from '../decorators/roles.decorator';
+import { UpdateBarbershopDto } from '../dto/update-barbershop.dto';
 
 @Controller('barbershop')
 @UseGuards(BarbershopRolesGuard)
@@ -31,6 +31,7 @@ export class BarbershopController {
 
   @Get('/me')
   findAllMe(@CurrentUser('sub') ownerId: string) {
+    console.log('ownerId:', ownerId);
     return this.barbershopService.findAllMe(ownerId);
   }
 

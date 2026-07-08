@@ -7,8 +7,8 @@ import {
 import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { BarbershopRole } from '../../barbershop/entities/barbershop-member.entity';
 import { BarbershopMemberService } from '../../barbershop/services/barbershop-member.service';
+import { BarbershopRole } from '../enums/barbershop-role.enum';
 
 interface RequestWithUser extends Request {
   user?: {

@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { BarbershopRole } from '../../barbershop/entities/barbershop-member.entity';
+import { BarbershopRole } from '../enums/barbershop-role.enum';
 
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: BarbershopRole[]) =>

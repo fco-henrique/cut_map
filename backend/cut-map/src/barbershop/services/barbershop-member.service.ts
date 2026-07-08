@@ -5,12 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import {
-  BarbershopMember,
-  BarbershopRole,
-} from '../entities/barbershop-member.entity';
+import { BarbershopMember } from '../entities/barbershop-member.entity';
 import { UserService } from 'src/user/user.service';
-import { BarbershopService } from 'src/barbershop/barbershop.service';
+import { BarbershopRole } from '../enums/barbershop-role.enum';
+import { BarbershopService } from './barbershop.service';
 
 @Injectable()
 export class BarbershopMemberService {
