@@ -9,6 +9,7 @@ import { BarbershopMember } from '../entities/barbershop-member.entity';
 import { UserService } from 'src/user/user.service';
 import { BarbershopRole } from '../enums/barbershop-role.enum';
 import { BarbershopService } from './barbershop.service';
+import { AddMemberDto } from '../dto/add-member.dto';
 
 @Injectable()
 export class BarbershopMemberService {
@@ -38,15 +39,14 @@ export class BarbershopMemberService {
   async addMemberToBarbershop(
     ownerId: string,
     barbershopId: string,
-    userId: string,
-    userRole: BarbershopRole,
+    dto: AddMemberDto,
   ) {
     await Promise.all([
-      this.userService.findOne(userId),
+      this.userService.findOne(dto.userId),
       this.barbershopService.findOne(barbershopId),
     ]);
 
-    if (userRole === BarbershopRole.OWNER) {
+    if (dto.userRole === BarbershopRole.OWNER) {
       const isOwner = await this.checkIfUserHasRole(barbershopId, ownerId, [
         BarbershopRole.OWNER,
       ]);
@@ -58,7 +58,7 @@ export class BarbershopMemberService {
     }
 
     const existingMembership = await this.barbershopMemberRepo.findOne({
-      where: { barbershop: { id: barbershopId }, user: { id: userId } },
+      where: { barbershop: { id: barbershopId }, user: { id: dto.userId } },
     });
 
     if (existingMembership) {
@@ -66,9 +66,9 @@ export class BarbershopMemberService {
     }
 
     const newMembership = this.barbershopMemberRepo.create({
-      user: { id: userId },
+      user: { id: dto.userId },
       barbershop: { id: barbershopId },
-      role: userRole,
+      role: dto.userRole,
     });
     await this.barbershopMemberRepo.save(newMembership);
 
@@ -77,7 +77,24 @@ export class BarbershopMemberService {
       membership: newMembership,
     };
   }
+
   async removeMemberFromBarbershop() {}
   async changeMemberRole() {}
-  async listBarbershopMembers() {}
+  async listBarbershopMembers(userId: string, barbershopId: string) {
+    const isMember = await this.checkIfUserHasRole(barbershopId, userId, [
+      BarbershopRole.OWNER,
+      BarbershopRole.MANAGER,
+      BarbershopRole.EMPLOYEE,
+    ]);
+
+    if (!isMember) {
+      throw new UnauthorizedException('Você não é membro desta barbearia.');
+    }
+
+    const members = await this.barbershopMemberRepo.find({
+      where: { barbershop: { id: barbershopId } },
+      relations: { user: true },
+    });
+    return { message: 'Membros encontrados com sucesso', members };
+  }
 }
