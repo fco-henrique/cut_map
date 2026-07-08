@@ -1,28 +1,38 @@
-import { Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { BarbershopMemberService } from '../services/barbershop-member.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { BarbershopRole } from '../enums/barbershop-role.enum';
 import { Roles } from '../decorators/roles.decorator';
+import { AddMemberDto } from '../dto/add-member.dto';
 
-@Controller('barbershop-member')
+@Controller('barbershops/:barbershopId/members')
 export class BarbershopMemberController {
   constructor(
     private readonly barbershopMemberService: BarbershopMemberService,
   ) {}
 
-  @Post('add-member')
+  @Post()
   @Roles(BarbershopRole.OWNER, BarbershopRole.MANAGER)
   addMember(
     @CurrentUser('sub') ownerId: string,
-    barbershopId: string,
-    userId: string,
-    userRole: BarbershopRole,
+    @Param('barbershopId') barbershopId: string,
+    @Body() dto: AddMemberDto,
   ) {
     return this.barbershopMemberService.addMemberToBarbershop(
       ownerId,
       barbershopId,
+      dto,
+    );
+  }
+
+  @Get()
+  listMembers(
+    @CurrentUser('sub') userId: string,
+    @Param('barbershopId') barbershopId: string,
+  ) {
+    return this.barbershopMemberService.listBarbershopMembers(
       userId,
-      userRole,
+      barbershopId,
     );
   }
 }

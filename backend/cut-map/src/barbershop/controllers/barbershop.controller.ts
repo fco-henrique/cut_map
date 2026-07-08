@@ -16,7 +16,7 @@ import { BarbershopRole } from '../enums/barbershop-role.enum';
 import { Roles } from '../decorators/roles.decorator';
 import { UpdateBarbershopDto } from '../dto/update-barbershop.dto';
 
-@Controller('barbershop')
+@Controller('barbershops')
 @UseGuards(BarbershopRolesGuard)
 export class BarbershopController {
   constructor(private readonly barbershopService: BarbershopService) {}
@@ -31,7 +31,6 @@ export class BarbershopController {
 
   @Get('/me')
   findAllMe(@CurrentUser('sub') ownerId: string) {
-    console.log('ownerId:', ownerId);
     return this.barbershopService.findAllMe(ownerId);
   }
 
