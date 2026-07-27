@@ -1,4 +1,4 @@
-import 'package:cut_map/services/token_storage.dart';
+import 'package:cut_map/core/token_storage.dart';
 import 'package:flutter/material.dart';
 
 class AuthManager extends ChangeNotifier {

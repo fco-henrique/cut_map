@@ -1,4 +1,4 @@
-import 'package:cut_map/commom/constants/app_colors.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/locator.dart';
 import 'package:flutter/material.dart';

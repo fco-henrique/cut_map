@@ -1,12 +1,12 @@
-import 'package:cut_map/commom/extensions/sizes.dart';
-import 'package:cut_map/commom/routes/named_routes.dart';
+import 'package:cut_map/common/extensions/sizes.dart';
+import 'package:cut_map/common/routes/named_routes.dart';
 import 'package:cut_map/features/auth/screens/change_password_screen.dart';
 import 'package:cut_map/features/auth/screens/send_email_screen.dart';
 import 'package:cut_map/features/auth/screens/sign_in_screen.dart';
 import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
-// import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
 import 'package:cut_map/features/auth/screens/verify_email_screen.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
+import 'package:cut_map/features/home/screens/home_screen.dart';
 import 'package:cut_map/features/splash/splash_screen.dart';
 import 'package:cut_map/features/welcome/welcome_screen.dart';
 import 'package:cut_map/locator.dart';
@@ -47,6 +47,7 @@ final _router = GoRouter(
       NamedRoutes.emailVerify,
       NamedRoutes.sendEmail,
       NamedRoutes.changePassword,
+      NamedRoutes.welcome,
     ];
 
     final isGoingToPublicRoute = publicRoutes.contains(state.matchedLocation);
@@ -60,7 +61,7 @@ final _router = GoRouter(
         state.matchedLocation == NamedRoutes.splash;
 
     if (isLoggedIn && isGoingToLoginOrSplash) {
-      return NamedRoutes.welcome;
+      return NamedRoutes.home;
     }
 
     return null;
@@ -79,10 +80,12 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: NamedRoutes.signIn,
+      name: NamedRoutes.signIn,
       pageBuilder: (context, state) => transition(state, const SignInScreen()),
     ),
     GoRoute(
       path: NamedRoutes.signUp,
+      name: NamedRoutes.signUp,
       pageBuilder: (context, state) => transition(state, const SignUpScreen()),
     ),
     GoRoute(
@@ -102,6 +105,7 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: NamedRoutes.sendEmail,
+      name: NamedRoutes.sendEmail,
       pageBuilder: (context, state) =>
           transition(state, const SendEmailScreen()),
     ),
@@ -112,6 +116,11 @@ final _router = GoRouter(
         final token = state.extra as String;
         return transition(state, ChangePasswordScreen(resetToken: token));
       },
+    ),
+    GoRoute(
+      path: NamedRoutes.home,
+      name: NamedRoutes.home,
+      pageBuilder: (context, state) => transition(state, const HomeScreen()),
     ),
   ],
 );

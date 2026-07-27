@@ -1,4 +1,4 @@
-import 'package:cut_map/commom/constants/app_colors.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {

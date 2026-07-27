@@ -5,8 +5,8 @@ import 'package:cut_map/features/auth/controllers/sign_up_controller.dart';
 import 'package:cut_map/features/auth/controllers/verify_email_controller.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/features/auth/services/auth_service.dart';
-import 'package:cut_map/services/api_client.dart';
-import 'package:cut_map/services/token_storage.dart';
+import 'package:cut_map/core/api_client.dart';
+import 'package:cut_map/core/token_storage.dart';
 import 'package:get_it/get_it.dart';
 
 final GetIt locator = GetIt.instance;

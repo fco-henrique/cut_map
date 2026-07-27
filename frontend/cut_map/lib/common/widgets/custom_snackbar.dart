@@ -1,5 +1,5 @@
-import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/extensions/sizes.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
+import 'package:cut_map/common/extensions/sizes.dart';
 import 'package:flutter/material.dart';
 
 enum SnackbarType { success, error, warning, unavailable, notification }

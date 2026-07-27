@@ -1,4 +1,4 @@
-import 'package:cut_map/services/api_client.dart';
+import 'package:cut_map/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 

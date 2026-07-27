@@ -1,7 +1,7 @@
 // import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/extensions/sizes.dart';
-import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
+import 'package:cut_map/common/extensions/sizes.dart';
+import 'package:cut_map/common/widgets/custom_text_form_field.dart';
 import 'package:flutter/material.dart';
 
 class CustomPasswordFormField extends StatefulWidget {
