@@ -52,10 +52,9 @@ class CustomCompactBarberCard extends StatelessWidget {
   Widget _buildImageHeader() {
     return Stack(
       children: [
-        // A imagem usando Ink para permitir o ripple effect
         Ink(
           width: double.infinity,
-          height: 110.h, // Altura menor proporcional ao card
+          height: 110.h, 
           decoration: const BoxDecoration(
             image: DecorationImage(
               image: AssetImage('assets/images/img_barber.jpg'),
@@ -64,7 +63,6 @@ class CustomCompactBarberCard extends StatelessWidget {
           ),
         ),
 
-        // Badge de Distância (Amarelo) no canto superior direito
         Positioned(
           top: 8.h,
           right: 8.w,
@@ -77,7 +75,7 @@ class CustomCompactBarberCard extends StatelessWidget {
             child: Text(
               distance ?? '0.3km',
               style: AppFonts.bold12.apply(
-                color: AppColors.background, // Texto escuro para dar contraste
+                color: AppColors.background, 
               ),
             ),
           ),
@@ -92,16 +90,14 @@ class CustomCompactBarberCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título
           Text(
             barberName,
             style: AppFonts.bold16.apply(color: AppColors.white),
-            maxLines: 1, // Evita que nomes grandes quebrem o card
+            maxLines: 1, 
             overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: 4.h),
 
-          // Avaliação
           Row(
             children: [
               Icon(Icons.star, color: AppColors.yellow, size: 14),
@@ -119,7 +115,6 @@ class CustomCompactBarberCard extends StatelessWidget {
           ),
           SizedBox(height: 4.h),
 
-          // Localização
           Text(
             location ?? 'Localização',
             style: AppFonts.regular14.apply(color: AppColors.gray),
