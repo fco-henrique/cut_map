@@ -6,10 +6,11 @@ import 'package:cut_map/features/auth/screens/sign_in_screen.dart';
 import 'package:cut_map/features/auth/screens/sign_up_screen.dart';
 import 'package:cut_map/features/auth/screens/verify_email_screen.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
-import 'package:cut_map/features/home/screens/home_screen.dart';
+// import 'package:cut_map/features/home/screens/home_screen.dart';
 import 'package:cut_map/features/splash/splash_screen.dart';
 import 'package:cut_map/features/welcome/welcome_screen.dart';
 import 'package:cut_map/locator.dart';
+import 'package:cut_map/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,7 +62,7 @@ final _router = GoRouter(
         state.matchedLocation == NamedRoutes.splash;
 
     if (isLoggedIn && isGoingToLoginOrSplash) {
-      return NamedRoutes.home;
+      return NamedRoutes.main;
     }
 
     return null;
@@ -118,10 +119,15 @@ final _router = GoRouter(
       },
     ),
     GoRoute(
-      path: NamedRoutes.home,
-      name: NamedRoutes.home,
-      pageBuilder: (context, state) => transition(state, const HomeScreen()),
+      path: NamedRoutes.main,
+      name: NamedRoutes.main,
+      pageBuilder: (context, state) => transition(state, const MainScreen()),
     ),
+    // GoRoute(
+    //   path: NamedRoutes.home,
+    //   name: NamedRoutes.home,
+    //   pageBuilder: (context, state) => transition(state, const HomeScreen()),
+    // ),
   ],
 );
 

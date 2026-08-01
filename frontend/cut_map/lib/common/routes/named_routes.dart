@@ -9,4 +9,5 @@ class NamedRoutes {
   static const String sendEmail = "/send_email";
   static const String changePassword = "/change_password";
   static const String home = "/home";
+  static const String main = "/main";
 }
