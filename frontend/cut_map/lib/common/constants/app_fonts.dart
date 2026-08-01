@@ -3,6 +3,11 @@ import 'package:flutter/widgets.dart';
 class AppFonts {
   AppFonts._();
 
+  static const TextStyle light18 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 16,
+    fontWeight: FontWeight.w300,
+  );
   static const TextStyle regular18 = TextStyle(
     fontFamily: 'Roboto',
     fontSize: 18,
@@ -28,6 +33,11 @@ class AppFonts {
     fontSize: 14,
     fontWeight: FontWeight.w500,
   );
+  static const TextStyle medium16 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+  );
   static const TextStyle semiBold20 = TextStyle(
     fontFamily: 'Roboto',
     fontSize: 20,
@@ -41,6 +51,16 @@ class AppFonts {
   static const TextStyle bold24 = TextStyle(
     fontFamily: 'Roboto',
     fontSize: 24,
+    fontWeight: FontWeight.bold,
+  );
+  static const TextStyle bold20 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+  );
+  static const TextStyle bold18 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 18,
     fontWeight: FontWeight.bold,
   );
   static const TextStyle bold16 = TextStyle(

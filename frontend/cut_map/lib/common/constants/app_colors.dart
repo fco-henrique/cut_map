@@ -15,4 +15,6 @@ class AppColors {
   static const Color yellowSnack = Color(0xFFFFB300);
   static const Color orangeSnack = Color(0xFFE57335);
   static const Color blueSnack = Color(0xFF3584E5);
+
+  static const Color lightGray = Color(0xFFCCCCCC);
 }
