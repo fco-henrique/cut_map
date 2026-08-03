@@ -1,5 +1,5 @@
 import 'package:cut_map/features/auth/services/auth_manager.dart';
-import 'package:cut_map/core/token_storage.dart';
+import 'package:cut_map/core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
 
 class ApiClient {
