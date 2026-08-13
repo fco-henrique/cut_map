@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { BarbershopModule } from './barbershop/barbershop.module';
+import { ReviewModule } from './review/review.module';
 import appConfig from './app.config';
 
 @Module({
@@ -32,6 +33,7 @@ import appConfig from './app.config';
     AuthModule,
     EmailModule,
     BarbershopModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
