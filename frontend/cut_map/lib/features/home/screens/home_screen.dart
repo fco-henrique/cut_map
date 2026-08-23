@@ -3,15 +3,41 @@ import 'package:cut_map/common/constants/app_fonts.dart';
 import 'package:cut_map/common/extensions/sizes.dart';
 import 'package:cut_map/common/widgets/custom_barber_card.dart';
 import 'package:cut_map/common/widgets/custom_compact_barber_card.dart';
+import 'package:cut_map/common/widgets/custom_map_preview.dart';
 import 'package:cut_map/common/widgets/custom_notification_button.dart';
 import 'package:cut_map/common/widgets/custom_profile_avatar.dart';
 import 'package:cut_map/common/widgets/custom_text_form_field.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
+import 'package:cut_map/features/home/controllers/home_controller.dart';
+import 'package:cut_map/features/home/states/section_state.dart';
 import 'package:cut_map/locator.dart';
+import 'package:cut_map/models/barbershop_model.dart';
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _controller = locator.get<HomeScreenController>();
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.loadAll();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,22 +59,34 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Olá,",
-                            style: AppFonts.regular16.apply(
-                              color: AppColors.white,
-                            ),
-                          ),
-                          Text(
-                            "Usuário",
-                            style: AppFonts.bold24.apply(
-                              color: AppColors.white,
-                            ),
-                          ),
-                        ],
+                      ListenableBuilder(
+                        listenable: locator.get<AuthManager>(),
+                        builder: (context, child) {
+                          final userName = locator
+                              .get<AuthManager>()
+                              .user
+                              ?.name;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Olá,",
+                                style: AppFonts.regular16.apply(
+                                  color: AppColors.white,
+                                ),
+                              ),
+                              Text(
+                                userName ?? "Usuário",
+                                style: AppFonts.bold24.apply(
+                                  color: AppColors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       Row(
                         spacing: 12,
@@ -130,14 +168,24 @@ class HomeScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 20.h),
 
-                  // LUGAR RESERVADO PARA O MAPA
-                  Container(
-                    height: 150.h,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: AppColors.gray.withValues(alpha: 0.2),
-                    ),
+                  // SEÇÃO: MAPA (deriva do estado de "próximas a você")
+                  ValueListenableBuilder<BarbershopsState>(
+                    valueListenable: _controller.nearbyState,
+                    builder: (context, state, child) {
+                      final List<BarbershopModel> barbearias = switch (state) {
+                        SectionSuccessState<List<BarbershopModel>>(
+                          :final data,
+                        ) =>
+                          data,
+                        _ => const <BarbershopModel>[],
+                      };
+
+                      return CustomMapPreview(
+                        centro: _controller.userLocation,
+                        barbearias: barbearias,
+                        onVerNoMapa: () {},
+                      );
+                    },
                   ),
                   SizedBox(height: 20.h),
 
@@ -169,32 +217,78 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(height: 10.h),
 
                   // CARDS DE BARBEARIAS COMPACTAS
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      spacing: 8,
-                      children: [
-                        CustomCompactBarberCard(
-                          barberName: "Lelo Barber",
-                          onTap: () {},
-                          distance: "1.7km",
-                          location: "Centro",
-                          rating: 4.2,
-                          reviewsCount: 67,
-                        ),
-                        CustomCompactBarberCard(
-                          barberName: "Kings Barber",
-                          onTap: () {},
-                        ),
-                        CustomCompactBarberCard(
-                          barberName: "Biro Barber",
-                          onTap: () {},
-                        ),
-                        CustomCompactBarberCard(
-                          barberName: "Nereu Barber",
-                          onTap: () {},
-                        ),
-                      ],
+                  SizedBox(
+                    height: CustomCompactBarberCard.cardHeight.h,
+                    child: ValueListenableBuilder<BarbershopsState>(
+                      valueListenable: _controller.nearbyState,
+                      builder: (context, state, child) {
+                        return switch (state) {
+                          SectionLoadingState() => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          SectionErrorState(
+                            :final message,
+                            :final isServerDown,
+                            :final isLocationBlocked,
+                          ) =>
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(message, textAlign: TextAlign.center),
+                                  if (isLocationBlocked) ...[
+                                    SizedBox(height: 10.h),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          _controller.openLocationSettings(),
+                                      child: const Text('Abrir configurações'),
+                                    ),
+                                  ] else if (isServerDown) ...[
+                                    SizedBox(height: 10.h),
+                                    ElevatedButton(
+                                      onPressed: () => _controller.loadNearby(),
+                                      child: const Text('Tentar novamente'),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          SectionSuccessState(:final data) =>
+                            data.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      'Nenhuma barbearia próxima encontrada.',
+                                    ),
+                                  )
+                                : SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      spacing: 8,
+                                      children: data
+                                          .map(
+                                            (
+                                              barbershop,
+                                            ) => CustomCompactBarberCard(
+                                              barberName: barbershop.name,
+                                              onTap: () {},
+                                              distance:
+                                                  barbershop.distanceInKm !=
+                                                      null
+                                                  ? '${barbershop.distanceInKm!.toStringAsFixed(1)} km'
+                                                  : null,
+                                              location:
+                                                  barbershop.address.bairro,
+                                              rating: barbershop.rating,
+                                              reviewsCount:
+                                                  barbershop.reviewsCount,
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ),
+                          _ => const SizedBox.shrink(),
+                        };
+                      },
                     ),
                   ),
                   SizedBox(height: 20.h),
@@ -227,12 +321,64 @@ class HomeScreen extends StatelessWidget {
 
                   // CARDS DE BARBEARIAS
                   SizedBox(height: 10.h),
-                  const CustomBarberCard(barberName: "Kings Barber"),
-                  SizedBox(height: 10.h),
-                  const CustomBarberCard(barberName: "Kings Barber"),
-                  SizedBox(height: 10.h),
-                  const CustomBarberCard(barberName: "Kings Barber"),
-                  SizedBox(height: 10.h),
+                  ValueListenableBuilder<BarbershopsState>(
+                    valueListenable: _controller.topRatedState,
+                    builder: (context, state, child) {
+                      return switch (state) {
+                        SectionLoadingState() => const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                        SectionErrorState(
+                          :final message,
+                          :final isServerDown,
+                        ) =>
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(message, textAlign: TextAlign.center),
+                                if (isServerDown) ...[
+                                  SizedBox(height: 10.h),
+                                  ElevatedButton(
+                                    onPressed: () => _controller.loadTopRated(),
+                                    child: const Text('Tentar novamente'),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        SectionSuccessState(:final data) =>
+                          data.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    'Nenhuma barbearia disponível no momento.',
+                                  ),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  padding: EdgeInsets.zero,
+                                  itemCount: data.length,
+                                  separatorBuilder: (context, index) =>
+                                      SizedBox(height: 10.h),
+                                  itemBuilder: (context, index) {
+                                    final currentBarbershop = data[index];
+
+                                    return CustomBarberCard(
+                                      barberName: currentBarbershop.name,
+                                      address:
+                                          currentBarbershop.address.formatted,
+                                      distance:
+                                          currentBarbershop.distanceInKm != null
+                                          ? '${currentBarbershop.distanceInKm!.toStringAsFixed(1)} km'
+                                          : null,
+                                    );
+                                  },
+                                ),
+                        _ => const SizedBox.shrink(),
+                      };
+                    },
+                  ),
 
                   // INFORMATIVO DE PRÓXIMO AGENDAMENTO
                   SizedBox(height: 20.h),
