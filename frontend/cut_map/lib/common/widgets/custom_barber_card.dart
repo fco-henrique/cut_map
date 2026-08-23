@@ -9,7 +9,7 @@ class CustomBarberCard extends StatefulWidget {
   final String barberName;
   final double? rating;
   final int? reviewsCount;
-  final String? location;
+  final String? address;
   final String? distance;
   final List<String>? services;
   final String? workingHours;
@@ -22,7 +22,7 @@ class CustomBarberCard extends StatefulWidget {
     required this.barberName,
     this.rating,
     this.reviewsCount,
-    this.location,
+    this.address,
     this.distance,
     this.services,
     this.workingHours,
@@ -46,10 +46,6 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      // decoration: BoxDecoration(
-      //   color: AppColors.darkGray,
-      //   borderRadius: BorderRadius.circular(16),
-      // ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Material(
@@ -154,10 +150,15 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                widget.barberName,
-                style: AppFonts.bold18.apply(color: AppColors.white),
+              Expanded(
+                child: Text(
+                  widget.barberName,
+                  style: AppFonts.bold18.apply(color: AppColors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Row(
                 children: [
                   Icon(Icons.star, color: AppColors.yellow, size: 18),
@@ -181,9 +182,13 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
             children: [
               Icon(Icons.location_on_outlined, color: AppColors.gray, size: 16),
               const SizedBox(width: 4),
-              Text(
-                '${widget.location ?? 'Localização'} • ${widget.distance ?? '0.3km'}',
-                style: AppFonts.regular14.apply(color: AppColors.gray),
+              Expanded(
+                child: Text(
+                  '${widget.address ?? 'Localização'} • ${widget.distance ?? '0.3km'}',
+                  style: AppFonts.regular14.apply(color: AppColors.gray),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -205,19 +210,32 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.access_time, color: AppColors.gray, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    widget.workingHours ?? '08:00 - 20:00',
-                    style: AppFonts.regular14.apply(color: AppColors.gray),
-                  ),
-                ],
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.access_time, color: AppColors.gray, size: 16),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        widget.workingHours ?? '08:00 - 20:00',
+                        style: AppFonts.regular14.apply(color: AppColors.gray),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                widget.startingPrice ?? 'A partir de R\$15',
-                style: AppFonts.bold14.apply(color: AppColors.yellow),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  widget.startingPrice ?? 'A partir de R\$15',
+                  style: AppFonts.bold14.apply(color: AppColors.yellow),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
               ),
             ],
           ),

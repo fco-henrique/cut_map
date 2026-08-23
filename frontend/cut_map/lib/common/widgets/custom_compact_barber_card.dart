@@ -2,9 +2,6 @@ import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:cut_map/common/constants/app_fonts.dart';
 import 'package:cut_map/common/extensions/sizes.dart';
 import 'package:flutter/material.dart';
-// import 'package:cut_map/common/constants/app_colors.dart';
-// import 'package:cut_map/common/constants/app_fonts.dart';
-// import 'package:cut_map/common/extensions/sizes.dart';
 
 class CustomCompactBarberCard extends StatelessWidget {
   final String barberName;
@@ -24,24 +21,31 @@ class CustomCompactBarberCard extends StatelessWidget {
     required this.onTap,
   });
 
+  // Altura total: imagem (110) + padding vertical (24) + nome (~20) +
+  // spacing (4) + rating (~20) + spacing (4) + localização (~20) + folga.
+  static const double cardHeight = 214;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 200.w,
-      decoration: BoxDecoration(
-        color: AppColors.darkGray,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Material(
+      height: cardHeight.h,
+      child: Container(
+        decoration: BoxDecoration(
           color: AppColors.darkGray,
-          child: InkWell(
-            onTap: onTap,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [_buildImageHeader(), _buildCardDetails()],
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Material(
+            color: AppColors.darkGray,
+            child: InkWell(
+              onTap: onTap,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [_buildImageHeader(), _buildCardDetails()],
+              ),
             ),
           ),
         ),
