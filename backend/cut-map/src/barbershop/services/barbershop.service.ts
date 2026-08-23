@@ -7,6 +7,7 @@ import { Barbershop } from '../entities/barbershop.entity';
 import { CreateBarbershopDto } from '../dto/create-barbershop.dto';
 import { BarbershopRole } from '../enums/barbershop-role.enum';
 import { UpdateBarbershopDto } from '../dto/update-barbershop.dto';
+import { GetBarbershopsFilterDto } from '../dto/get-barbershop-filters.dto';
 
 @Injectable()
 export class BarbershopService {
@@ -68,9 +69,43 @@ export class BarbershopService {
     return { message: 'Busca realizada com sucesso', barbershops };
   }
 
-  async findAll() {
-    const barbershops = await this.barbershopRepo.find({});
+  async findAll(filters: GetBarbershopsFilterDto) {
+    const { sortBy, lat, lng, limit = 10 } = filters;
 
+    const query = this.barbershopRepo.createQueryBuilder('barbershop');
+
+    if (sortBy === 'distance') {
+      const distanceExpr = `(6371 * acos(
+      cos(radians(:lat)) * cos(radians(barbershop.address.latitude)) *
+      cos(radians(barbershop.address.longitude) - radians(:lng)) +
+      sin(radians(:lat)) * sin(radians(barbershop.address.latitude))
+    ))`;
+
+      query
+        .addSelect(distanceExpr, 'distance')
+        .setParameters({ lat, lng })
+        .where(`${distanceExpr} <= :maxDistance`, { maxDistance: 5 })
+        .orderBy('distance', 'ASC');
+    } else if (sortBy === 'rating') {
+      query.orderBy('barbershop.averageRating', 'DESC');
+    } else {
+      query.orderBy('barbershop.createdAt', 'DESC');
+    }
+
+    query.take(limit);
+
+    if (sortBy === 'distance') {
+      const { entities, raw } = await query.getRawAndEntities();
+      const barbershops = entities.map((entity, index) => ({
+        ...entity,
+        distanceInKm: parseFloat(
+          Number((raw[index] as Record<string, number>).distance).toFixed(2),
+        ),
+      }));
+      return { message: 'Busca realizada com sucesso', barbershops };
+    }
+
+    const barbershops = await query.getMany();
     return { message: 'Busca realizada com sucesso', barbershops };
   }
 

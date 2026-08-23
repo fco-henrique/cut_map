@@ -1,5 +1,12 @@
 import { BarbershopMember } from 'src/barbershop/entities/barbershop-member.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Address } from './address.embeddable';
 import { Review } from 'src/review/entities/review.entity';
 
@@ -25,4 +32,10 @@ export class Barbershop {
 
   @OneToMany(() => Review, review => review.barbershop)
   reviews: Review[];
+
+  @CreateDateColumn({ select: false })
+  createdAt: Date;
+
+  @UpdateDateColumn({ select: false })
+  updatedAt: Date;
 }

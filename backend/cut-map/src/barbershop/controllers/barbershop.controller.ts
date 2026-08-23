@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { BarbershopRolesGuard } from '../guards/barbershop-roles.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -15,6 +16,7 @@ import { BarbershopService } from '../services/barbershop.service';
 import { BarbershopRole } from '../enums/barbershop-role.enum';
 import { Roles } from '../decorators/roles.decorator';
 import { UpdateBarbershopDto } from '../dto/update-barbershop.dto';
+import { GetBarbershopsFilterDto } from '../dto/get-barbershop-filters.dto';
 
 @Controller('barbershops')
 @UseGuards(BarbershopRolesGuard)
@@ -35,8 +37,8 @@ export class BarbershopController {
   }
 
   @Get()
-  findAll() {
-    return this.barbershopService.findAll();
+  findAll(@Query() filters: GetBarbershopsFilterDto) {
+    return this.barbershopService.findAll(filters);
   }
 
   @Get('/me/:id')
