@@ -1,5 +1,6 @@
 import 'package:cut_map/core/network/api_client.dart';
 import 'package:cut_map/core/network/api_error_handler.dart';
+import 'package:cut_map/models/user_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -122,6 +123,15 @@ class AuthService with ChangeNotifier {
         }
       }
       throw 'Token de recuperação inválido ou não retornado.';
+    } catch (e) {
+      throw ApiErrorHandler.handleError(e);
+    }
+  }
+
+  Future<UserModel> getCurrentUser() async {
+    try {
+      final response = await api.dio.get('/user/me');
+      return UserModel.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       throw ApiErrorHandler.handleError(e);
     }
