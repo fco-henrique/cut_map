@@ -1,4 +1,5 @@
 import 'package:cut_map/core/network/api_client.dart';
+import 'package:cut_map/core/network/api_error_handler.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -26,39 +27,8 @@ class AuthService with ChangeNotifier {
         '/user',
         data: {'name': name, 'email': email, 'password': password},
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
-      }
-
-      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
-
-      if (e.response?.data != null) {
-        var responseData = e.response!.data;
-
-        if (responseData is Map) {
-          if (responseData.containsKey('message')) {
-            var messageData = responseData['message'];
-
-            if (messageData is List && messageData.isNotEmpty) {
-              errorMessage = messageData.first.toString();
-            } else {
-              errorMessage = messageData.toString();
-            }
-          } else if (responseData.containsKey('detail')) {
-            errorMessage = responseData['detail'].toString();
-          }
-        } else if (responseData is String) {
-          errorMessage = responseData;
-        }
-      }
-
-      throw errorMessage;
     } catch (e) {
-      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+      throw ApiErrorHandler.handleError(e);
     }
   }
 
@@ -84,23 +54,11 @@ class AuthService with ChangeNotifier {
       }
 
       throw 'Falha ao autenticar: código HTTP ${response.statusCode}.';
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
-      }
-
-      if (e.response != null && e.response?.data != null) {
-        final errorDetail =
-            e.response?.data['message'] ?? e.response?.data['detail'];
-        throw errorDetail ?? 'Credenciais inválidas';
-      }
-
-      throw 'Não foi possível conectar ao servidor. Verifique sua conexão.';
     } catch (e) {
-      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+      throw ApiErrorHandler.handleError(
+        e,
+        fallbackMessage: 'Credenciais inválidas ou erro de conexão.',
+      );
     }
   }
 
@@ -126,117 +84,24 @@ class AuthService with ChangeNotifier {
       }
 
       throw 'Falha ao verificar: código HTTP ${response.statusCode}.';
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
-      }
-
-      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
-
-      if (e.response?.data != null) {
-        var responseData = e.response!.data;
-
-        if (responseData is Map) {
-          if (responseData.containsKey('message')) {
-            var messageData = responseData['message'];
-
-            if (messageData is List && messageData.isNotEmpty) {
-              errorMessage = messageData.first.toString();
-            } else {
-              errorMessage = messageData.toString();
-            }
-          } else if (responseData.containsKey('detail')) {
-            errorMessage = responseData['detail'].toString();
-          }
-        } else if (responseData is String) {
-          errorMessage = responseData;
-        }
-      }
-
-      throw errorMessage;
     } catch (e) {
-      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+      throw ApiErrorHandler.handleError(e);
     }
   }
 
   Future<void> resendVerificationEmail({required String email}) async {
     try {
       await api.dio.post('/auth/resend-verification', data: {'email': email});
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
-      }
-
-      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
-
-      if (e.response?.data != null) {
-        var responseData = e.response!.data;
-
-        if (responseData is Map) {
-          if (responseData.containsKey('message')) {
-            var messageData = responseData['message'];
-
-            if (messageData is List && messageData.isNotEmpty) {
-              errorMessage = messageData.first.toString();
-            } else {
-              errorMessage = messageData.toString();
-            }
-          } else if (responseData.containsKey('detail')) {
-            errorMessage = responseData['detail'].toString();
-          }
-        } else if (responseData is String) {
-          errorMessage = responseData;
-        }
-      }
-
-      throw errorMessage;
     } catch (e) {
-      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+      throw ApiErrorHandler.handleError(e);
     }
   }
 
   Future<void> forgotPassword({required String email}) async {
     try {
       await api.dio.post('/auth/forgot-password', data: {'email': email});
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
-      }
-
-      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
-
-      if (e.response?.data != null) {
-        var responseData = e.response!.data;
-
-        if (responseData is Map) {
-          if (responseData.containsKey('message')) {
-            var messageData = responseData['message'];
-
-            if (messageData is List && messageData.isNotEmpty) {
-              errorMessage = messageData.first.toString();
-            } else {
-              errorMessage = messageData.toString();
-            }
-          } else if (responseData.containsKey('detail')) {
-            errorMessage = responseData['detail'].toString();
-          }
-        } else if (responseData is String) {
-          errorMessage = responseData;
-        }
-      }
-
-      throw errorMessage;
     } catch (e) {
-      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+      throw ApiErrorHandler.handleError(e);
     }
   }
 
@@ -257,40 +122,8 @@ class AuthService with ChangeNotifier {
         }
       }
       throw 'Token de recuperação inválido ou não retornado.';
-
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
-      }
-
-      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
-
-      if (e.response?.data != null) {
-        var responseData = e.response!.data;
-
-        if (responseData is Map) {
-          if (responseData.containsKey('message')) {
-            var messageData = responseData['message'];
-
-            if (messageData is List && messageData.isNotEmpty) {
-              errorMessage = messageData.first.toString();
-            } else {
-              errorMessage = messageData.toString();
-            }
-          } else if (responseData.containsKey('detail')) {
-            errorMessage = responseData['detail'].toString();
-          }
-        } else if (responseData is String) {
-          errorMessage = responseData;
-        }
-      }
-
-      throw errorMessage;
     } catch (e) {
-      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+      throw ApiErrorHandler.handleError(e);
     }
   }
 
@@ -302,45 +135,10 @@ class AuthService with ChangeNotifier {
       await api.dio.post(
         '/auth/reset-password',
         data: {'newPassword': newPassword},
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $resetToken', 
-          },
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $resetToken'}),
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
-      }
-
-      String errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
-
-      if (e.response?.data != null) {
-        var responseData = e.response!.data;
-
-        if (responseData is Map) {
-          if (responseData.containsKey('message')) {
-            var messageData = responseData['message'];
-
-            if (messageData is List && messageData.isNotEmpty) {
-              errorMessage = messageData.first.toString();
-            } else {
-              errorMessage = messageData.toString();
-            }
-          } else if (responseData.containsKey('detail')) {
-            errorMessage = responseData['detail'].toString();
-          }
-        } else if (responseData is String) {
-          errorMessage = responseData;
-        }
-      }
-
-      throw errorMessage;
     } catch (e) {
-      throw 'Ocorreu um erro inesperado: ${e.toString()}';
+      throw ApiErrorHandler.handleError(e);
     }
   }
 }
