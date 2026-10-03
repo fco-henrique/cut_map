@@ -13,6 +13,7 @@ import { ResendCodeDto } from 'src/email/dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -26,8 +27,8 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
-  refresh(@Body('refreshToken') token: string) {
-    return this.authService.refresh(token);
+  refresh(@Body() dto: RefreshDto) {
+    return this.authService.refresh(dto.refreshToken);
   }
 
   @Post('verify-email')

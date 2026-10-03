@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -10,10 +11,15 @@ import { IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtService } from '@nestjs/jwt';
-import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
 import { EmailService } from 'src/email/email.service';
 import { HashingService } from './hashing/hashing.service';
+import {
+  AccessTokenPayload,
+  RefreshTokenPayload,
+} from './interfaces/jwt-payload.interface';
+import type { ConfigType } from '@nestjs/config';
+import jwtConfig from './config/jwt.config';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +33,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
     private readonly hashingService: HashingService,
+
+    @Inject(jwtConfig.KEY)
+    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {}
 
   async login(dto: LoginDto) {
@@ -45,7 +54,10 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('Credenciais inválidas');
 
-    const valid = await argon2.verify(user.passwordHash, password);
+    const valid = await this.hashingService.compare(
+      user.passwordHash,
+      password,
+    );
     if (!valid) throw new UnauthorizedException('Credenciais inválidas');
 
     return user;
@@ -56,35 +68,39 @@ export class AuthService {
       {
         sub: user.id,
         email: user.email,
-        purpose: 'password_reset',
+        type: 'password_reset',
       },
       {
         expiresIn: '10m',
-        secret: process.env.JWT_RESET_SECRET,
+        secret: this.jwtConfiguration.resetSecret,
       },
     );
   }
 
   private async generateAccessToken(user: User) {
-    return this.jwtService.signAsync(
-      {
-        sub: user.id,
-        email: user.email,
-        name: user.name,
-      },
-      { expiresIn: '15m' },
-    );
+    const payload: AccessTokenPayload = {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      type: 'access',
+    };
+
+    return this.jwtService.signAsync(payload, {
+      expiresIn: '15m',
+      audience: this.jwtConfiguration.audience,
+      issuer: this.jwtConfiguration.issuer,
+    });
   }
 
   private async generateRefreshToken(user: User) {
     const tokenId = randomUUID();
 
     const token = await this.jwtService.signAsync(
-      { sub: user.id, tokenId },
-      { expiresIn: '7d' },
+      { sub: user.id, tokenId, type: 'refresh' },
+      { expiresIn: '7d', secret: this.jwtConfiguration.refreshSecret },
     );
 
-    const hash = await argon2.hash(token);
+    const hash = await this.hashingService.hash(token);
 
     const entity = this.refreshRepo.create({
       id: tokenId,
@@ -99,17 +115,21 @@ export class AuthService {
   }
 
   async refresh(token: string) {
-    const payload = await this.jwtService.verifyAsync<{
-      sub: string;
-      tokenId: string;
-    }>(token);
-    console.log('Payload do refresh token:', payload);
+    let payload: RefreshTokenPayload;
+    try {
+      payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(token, {
+        secret: this.jwtConfiguration.refreshSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Refresh token inválido.');
+    }
+
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('Token inválido para esta operação.');
+    }
 
     const storedToken = await this.refreshRepo.findOne({
-      where: {
-        id: payload.tokenId,
-        revokedAt: IsNull(),
-      },
+      where: { id: payload.tokenId },
       relations: ['user'],
     });
 
@@ -117,14 +137,32 @@ export class AuthService {
       throw new UnauthorizedException('Token não encontrado ou já revogado.');
     }
 
-    const match = await argon2.verify(storedToken.tokenHash, token);
-
+    const match = await this.hashingService.compare(
+      storedToken.tokenHash,
+      token,
+    );
     if (!match) {
       throw new UnauthorizedException('Refresh token inválido.');
     }
 
-    storedToken.revokedAt = new Date();
-    await this.refreshRepo.save(storedToken);
+    if (storedToken.revokedAt) {
+      await this.refreshRepo.update(
+        { user: { id: storedToken.user.id }, revokedAt: IsNull() },
+        { revokedAt: new Date() },
+      );
+      throw new UnauthorizedException(
+        'Sessão comprometida detectada. Faça login novamente.',
+      );
+    }
+
+    const { affected } = await this.refreshRepo.update(
+      { id: storedToken.id, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+
+    if (affected !== 1) {
+      throw new UnauthorizedException('Refresh token inválido.');
+    }
 
     const accessToken = await this.generateAccessToken(storedToken.user);
     const refreshToken = await this.generateRefreshToken(storedToken.user);
@@ -155,7 +193,7 @@ export class AuthService {
     ) {
       throw new BadRequestException('Código expirado. Solicite um novo.');
     }
-    if (user.emailVerificationCode !== code) {
+    if (user.emailVerificationCode !== code.trim()) {
       throw new BadRequestException('Código inválido.');
     }
 
@@ -176,7 +214,10 @@ export class AuthService {
   }
 
   async resendVerificationCode(email: string) {
-    const user = await this.userRepo.findOne({ where: { email } });
+    const user = await this.userRepo.findOne({
+      where: { email },
+      select: ['id', 'name', 'email', 'emailVerifiedAt'],
+    });
 
     if (!user) throw new BadRequestException('Usuário não encontrado.');
     if (user.emailVerifiedAt)
@@ -223,7 +264,10 @@ export class AuthService {
   }
 
   async verifyResetCode(email: string, code: string) {
-    const user = await this.userRepo.findOne({ where: { email } });
+    const user = await this.userRepo.findOne({
+      where: { email },
+      select: ['id', 'email', 'resetPasswordCode', 'resetPasswordExpires'],
+    });
 
     if (!user) throw new BadRequestException('Usuário não encontrado.');
     if (!user.resetPasswordCode)
@@ -233,7 +277,7 @@ export class AuthService {
       throw new BadRequestException('Código expirado. Solicite novamente.');
     }
 
-    if (user.resetPasswordCode !== code) {
+    if (user.resetPasswordCode !== code.trim()) {
       throw new BadRequestException('Código inválido.');
     }
 
