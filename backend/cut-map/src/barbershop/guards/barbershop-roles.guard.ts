@@ -37,7 +37,8 @@ export class BarbershopRolesGuard implements CanActivate {
 
     const user = request.user;
 
-    const barbershopId = request.params.id as string;
+    const barbershopId = (request.params.barbershopId ??
+      request.params.id) as string;
 
     if (!user || !barbershopId) {
       throw new ForbiddenException('Acesso negado.');
