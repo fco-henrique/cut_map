@@ -27,34 +27,44 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+  void _onControllerChanged() {
+    final state = _controller.state;
+
+    if (!mounted) return;
+
+    if (state is SendEmailScreenSuccessState) {
+      context.go(
+        NamedRoutes.emailVerify,
+        extra: {
+          'email': _emailController.text.trim(),
+          'context': VerificationContext.forgotPassword,
+        },
+      );
+    } else if (state is SendEmailScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown
+            ? 'Servidor Indisponível'
+            : 'Falha ao enviar e-mail',
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onControllerChanged);
+  }
 
-    _controller.addListener(() {
-      final state = _controller.state;
-
-      if (state is SendEmailScreenSuccessState) {
-        context.go(
-          NamedRoutes.emailVerify,
-          extra: {
-            'email': _emailController.text.trim(),
-            'context': VerificationContext.forgotPassword,
-          },
-        );
-      } else if (state is SendEmailScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? 'Servidor Indisponível'
-              : 'Falha ao enviar e-mail',
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _emailController.dispose();
+    super.dispose();
   }
 
   @override
@@ -156,7 +166,9 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
                       final valid = _formKey.currentState?.validate() ?? false;
 
                       if (valid) {
-                        _controller.forgotPassword(_emailController.text);
+                        _controller.forgotPassword(
+                          _emailController.text.trim(),
+                        );
                       }
                     },
                   );

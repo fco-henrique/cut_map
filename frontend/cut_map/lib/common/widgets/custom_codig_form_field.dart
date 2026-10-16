@@ -30,6 +30,10 @@ class _CustomCodigFormFieldState extends State<CustomCodigFormField> {
     return TextFormField(
       controller: widget.controller ?? TextEditingController(),
       validator: widget.validator,
+      keyboardType: TextInputType.visiblePassword,
+      textCapitalization: TextCapitalization.none,
+      autocorrect: false,
+      enableSuggestions: false,
       textAlign: TextAlign.center,
       style: AppFonts.bold24.apply(color: AppColors.white),
       cursorColor: AppColors.white,
@@ -37,7 +41,7 @@ class _CustomCodigFormFieldState extends State<CustomCodigFormField> {
       decoration: InputDecoration(
         filled: true,
         fillColor: AppColors.darkGray,
-        hintText: "000000",
+        hintText: "Aa0a10",
         hintStyle: AppFonts.bold24.apply(color: const Color(0x83F5C518)),
         helperText: widget.helperText ?? " ",
         helperStyle: TextStyle(

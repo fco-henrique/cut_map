@@ -29,28 +29,39 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+  void _onControllerChanged() {
+    final state = _controller.state;
+
+    if (!mounted) return;
+
+    if (state is ChangePasswordScreenSuccessState) {
+      context.go(NamedRoutes.signIn);
+    } else if (state is ChangePasswordScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown
+            ? "Servidor Indisponível"
+            : "Falha ao alterar senha",
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onControllerChanged);
+  }
 
-    _controller.addListener(() {
-      final state = _controller.state;
-
-      if (state is ChangePasswordScreenSuccessState) {
-        context.go(NamedRoutes.signIn);
-      } else if (state is ChangePasswordScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? "Servidor Indisponível"
-              : "Falha ao alterar senha",
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override

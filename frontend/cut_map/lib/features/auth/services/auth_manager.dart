@@ -58,9 +58,18 @@ class AuthManager extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await storage.deleteTokens();
-    _isLoggedIn = false;
-    _user = null;
-    notifyListeners();
+    final refreshToken = await storage.readRefreshToken();
+    try {
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await authService.logout(refreshToken);
+      }
+    } catch (_) {
+      // Uma falha de rede não deve impedir o encerramento local da sessão.
+    } finally {
+      await storage.deleteTokens();
+      _isLoggedIn = false;
+      _user = null;
+      notifyListeners();
+    }
   }
 }

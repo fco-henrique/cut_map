@@ -34,6 +34,10 @@ class SignInScreenController extends ChangeNotifier {
       );
 
       _changeState(SignInScreenSuccessState());
+    } on EmailNotVerifiedException catch (e) {
+      _changeState(
+        SignInScreenUnverifiedState(email: email, message: e.message),
+      );
     } catch (e) {
       final errorMessage = e.toString();
 

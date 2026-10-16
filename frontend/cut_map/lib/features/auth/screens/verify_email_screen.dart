@@ -59,43 +59,47 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     });
   }
 
+  void _onControllerChanged() {
+    final state = _controller.state;
+
+    if (!mounted) return;
+
+    if (state is VerifyEmailScreenSuccessState) {
+      context.go(NamedRoutes.main);
+    } else if (state is VerifyEmailScreenResendSuccessState) {
+      CustomSnackbar.show(
+        context,
+        title: "Código Reenviado",
+        message: "Verifique sua caixa de entrada e spam.",
+        type: SnackbarType.success,
+      );
+    } else if (state is VerifyEmailScreenResetSuccessState) {
+      context.push(NamedRoutes.changePassword, extra: state.resetToken);
+    } else if (state is VerifyEmailScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown
+            ? "Servidor Indisponível"
+            : "Falha na Verificação",
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     startTimer();
-
-    _controller.addListener(() {
-      final state = _controller.state;
-
-      if (state is VerifyEmailScreenSuccessState) {
-        context.go(NamedRoutes.welcome);
-      } else if (state is VerifyEmailScreenResendSuccessState) {
-        CustomSnackbar.show(
-          context,
-          title: "Código Reenviado",
-          message: "Verifique sua caixa de entrada e spam.",
-          type: SnackbarType.success,
-        );
-      } else if (state is VerifyEmailScreenResetSuccessState) {
-        context.push(NamedRoutes.changePassword, extra: state.resetToken);
-      } else if (state is VerifyEmailScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? "Servidor Indisponível"
-              : "Falha na Verificação",
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
+    _controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _controller.removeListener(_onControllerChanged);
     _codigController.dispose();
     super.dispose();
   }
@@ -215,6 +219,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                                 startTimer();
                                 _controller.resendVerificationEmail(
                                   widget.email,
+                                  widget.context,
                                 );
                               }
                             : null,

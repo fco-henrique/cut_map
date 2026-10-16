@@ -4,60 +4,101 @@ import 'package:cut_map/locator.dart';
 import 'package:dio/dio.dart';
 
 class ApiClient {
+  static const baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.0.103:3000',
+  );
+
+  static const _publicAuthPaths = {
+    '/user',
+    '/auth/login',
+    '/auth/refresh',
+    '/auth/logout',
+    '/auth/verify-email',
+    '/auth/resend-verification',
+    '/auth/forgot-password',
+    '/auth/verify-reset-code',
+    '/auth/reset-password',
+  };
+
   final Dio dio;
   final TokenStorage storage;
+  final Dio _refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
+  Future<String>? _pendingRefresh;
 
-  final Dio _refreshDio = Dio(BaseOptions(baseUrl: 'http://192.168.0.3:3000'));
+  Future<String> _refreshAccessToken(String refreshToken) async {
+    final response = await _refreshDio.post(
+      '/auth/refresh', data: {'refreshToken': refreshToken},
+    );
+    final accessToken = response.data['accessToken'];
+    final nextRefreshToken = response.data['refreshToken'];
+    if (accessToken is! String || nextRefreshToken is! String) {
+      throw StateError('Resposta de renovação inválida.');
+    }
+    await storage.saveTokens(accessToken, nextRefreshToken);
+    return accessToken;
+  }
 
   ApiClient({required this.storage}) : dio = Dio() {
-    dio.options = BaseOptions(baseUrl: 'http://192.168.0.3:3000');
+    dio.options = BaseOptions(baseUrl: baseUrl);
 
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await storage.readAccessToken();
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
+          if (!_publicAuthPaths.contains(options.path) &&
+              !options.headers.containsKey('Authorization')) {
+            final token = await storage.readAccessToken();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
           }
-          return handler.next(options);
+          handler.next(options);
         },
-        onError: (DioException e, handler) async {
-          if (e.response?.statusCode == 401) {
-            final refreshToken = await storage.readRefreshToken();
+        onError: (e, handler) async {
+          if (e.response?.statusCode != 401 ||
+              _publicAuthPaths.contains(e.requestOptions.path) ||
+              e.requestOptions.extra['retriedAfterRefresh'] == true) {
+            return handler.next(e);
+          }
 
-            if (refreshToken == null) {
-              return handler.next(e);
-            }
+          final requestToken = e.requestOptions.headers['Authorization'];
+          final accessToken = await storage.readAccessToken();
+          final refreshToken = await storage.readRefreshToken();
+          if (requestToken is! String ||
+              accessToken == null || accessToken.isEmpty ||
+              refreshToken == null || refreshToken.isEmpty) {
+            return handler.next(e);
+          }
 
+          // Outra chamada pode já ter renovado o token desta requisição.
+          if (requestToken != 'Bearer $accessToken' && _pendingRefresh == null) {
+            e.requestOptions.extra['retriedAfterRefresh'] = true;
+            e.requestOptions.headers['Authorization'] = 'Bearer $accessToken';
             try {
-              final refreshResponse = await _refreshDio.post(
-                '/auth/refresh',
-                data: {'refreshToken': refreshToken},
-              );
-
-              if (refreshResponse.statusCode == 200 ||
-                  refreshResponse.statusCode == 201) {
-                final newAccessToken = refreshResponse.data['accessToken'];
-                final newRefreshToken = refreshResponse.data['refreshToken'];
-
-                await storage.saveTokens(newAccessToken, newRefreshToken);
-
-                e.requestOptions.headers['Authorization'] =
-                    'Bearer $newAccessToken';
-
-                final retryResponse = await dio.fetch(e.requestOptions);
-
-                return handler.resolve(retryResponse);
-              }
-            } catch (refreshError) {
-              // Resolvido aqui, no momento do erro — não no construtor.
-              // É isso que quebra o ciclo ApiClient -> AuthManager -> AuthService -> ApiClient.
-              await locator<AuthManager>().logout();
-              return handler.next(e);
+              return handler.resolve(await dio.fetch(e.requestOptions));
+            } on DioException catch (retryError) {
+              return handler.next(retryError);
             }
           }
 
-          return handler.next(e);
+          String newAccessToken;
+          try {
+            final pending = _pendingRefresh ??= _refreshAccessToken(refreshToken);
+            newAccessToken = await pending;
+          } catch (_) {
+            await locator<AuthManager>().logout();
+            return handler.next(e);
+          } finally {
+            _pendingRefresh = null;
+          }
+
+          e.requestOptions.extra['retriedAfterRefresh'] = true;
+          e.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+          try {
+            return handler.resolve(await dio.fetch(e.requestOptions));
+          } on DioException catch (retryError) {
+            return handler.next(retryError);
+          }
         },
       ),
     );

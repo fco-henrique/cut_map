@@ -23,9 +23,6 @@ class SignUpScreenController extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    log(
-      "Os dados chegaram no controller name: $name email: $email password: $password",
-    );
     _changeState(SignUpScreenLoadingState());
     try {
       await _authService.signUp(
@@ -34,10 +31,6 @@ class SignUpScreenController extends ChangeNotifier {
         password: password.trim(),
       );
 
-      // await _authService.signIn(
-      //   email: email,
-      //   password: password.trim(),
-      // );
       log("Usuário criado com sucesso via API com Dio");
       _changeState(SignUpScreenSuccessState());
     } catch (e) {

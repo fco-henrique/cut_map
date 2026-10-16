@@ -13,6 +13,15 @@ class AuthState {
   const AuthState({required this.type, this.role});
 }
 
+class EmailNotVerifiedException implements Exception {
+  final String message;
+
+  const EmailNotVerifiedException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class AuthService with ChangeNotifier {
   final ApiClient api;
 
@@ -28,6 +37,15 @@ class AuthService with ChangeNotifier {
         '/user',
         data: {'name': name, 'email': email, 'password': password},
       );
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Cadastro: ${e.type} ${e.requestOptions.uri} '
+          'HTTP ${e.response?.statusCode ?? '-'}: ${e.message}; '
+          'causa: ${e.error}',
+        );
+      }
+      throw ApiErrorHandler.handleError(e);
     } catch (e) {
       throw ApiErrorHandler.handleError(e);
     }
@@ -56,6 +74,9 @@ class AuthService with ChangeNotifier {
 
       throw 'Falha ao autenticar: código HTTP ${response.statusCode}.';
     } catch (e) {
+      if (e is DioException && e.response?.statusCode == 403) {
+        throw EmailNotVerifiedException(ApiErrorHandler.handleError(e));
+      }
       throw ApiErrorHandler.handleError(
         e,
         fallbackMessage: 'Credenciais inválidas ou erro de conexão.',
@@ -150,5 +171,12 @@ class AuthService with ChangeNotifier {
     } catch (e) {
       throw ApiErrorHandler.handleError(e);
     }
+  }
+
+  Future<void> logout(String refreshToken) async {
+    await api.dio.post(
+      '/auth/logout',
+      data: {'refreshToken': refreshToken},
+    );
   }
 }

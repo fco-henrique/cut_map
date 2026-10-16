@@ -38,10 +38,9 @@ class InputsValidator {
 
   static FormFieldValidator<String> get codig => Validatorless.multiple([
     Validatorless.required('Este campo é obrigatório'),
-    Validatorless.min(6, 'O código deve ter 6 caracteres'),
     Validatorless.regex(
-      RegExp(r'^[a-zA-Z0-9]+$'),
-      'O código deve ser composto apenas por letras e números',
+      RegExp(r'^[A-Za-z0-9]{6}$'),
+      'O código deve ter 6 letras ou números',
     ),
   ]);
 }

@@ -1,5 +1,7 @@
 import 'package:cut_map/features/auth/services/auth_service.dart';
+import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/features/auth/states/change_password_state.dart';
+import 'package:cut_map/locator.dart';
 import 'package:flutter/material.dart';
 
 class ChangePasswordScreenController extends ChangeNotifier {
@@ -24,6 +26,7 @@ class ChangePasswordScreenController extends ChangeNotifier {
 
     try {
       await _authService.resetPassword(resetToken: resetToken, newPassword: newPassword);
+      await locator.get<AuthManager>().logout();
       _changeState(ChangePasswordScreenSuccessState());
     } catch (e) {
       final errorMessage = e.toString();
