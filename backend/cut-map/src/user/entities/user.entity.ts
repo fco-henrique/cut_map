@@ -37,6 +37,9 @@ export class User {
   @Column({ type: 'timestamp', nullable: true, select: false })
   resetPasswordExpires: Date | null;
 
+  @Column({ type: 'timestamp', nullable: true, select: false })
+  passwordChangedAt: Date | null;
+
   //   @Column({ nullable: true })
   //   phone: string;
 

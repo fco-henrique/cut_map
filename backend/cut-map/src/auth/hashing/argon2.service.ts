@@ -13,7 +13,7 @@ export class Argon2Service extends HashingService {
     });
   }
 
-  async compare(passwordHash: string, password: string): Promise<boolean> {
+  async compare(password: string, passwordHash: string): Promise<boolean> {
     return argon2.verify(passwordHash, password);
   }
 }

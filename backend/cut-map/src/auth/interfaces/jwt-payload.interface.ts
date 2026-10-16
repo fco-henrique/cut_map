@@ -17,6 +17,7 @@ export interface ResetTokenPayload {
   sub: string;
   email: string;
   type: 'password_reset';
+  iat: number;
 }
 
 export interface AuthenticatedUser {

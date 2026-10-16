@@ -1,13 +1,13 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, QueryFailedError, Repository } from 'typeorm';
+import { QueryFailedError, Repository, ILike } from 'typeorm';
 import { User } from './entities/user.entity';
 import { HashingService } from 'src/auth/hashing/hashing.service';
 import { EmailService } from 'src/email/email.service';
@@ -83,11 +83,6 @@ export class UserService {
     }
   }
 
-  async findAll() {
-    const users = await this.userRepo.find();
-    return users;
-  }
-
   async findOne(id: string) {
     const user = await this.userRepo.findOne({ where: { id } });
 
@@ -95,6 +90,11 @@ export class UserService {
       throw new NotFoundException('Usuário não encontrado ou inexistente!');
 
     return user;
+  }
+
+  async findAll() {
+    const users = await this.userRepo.find();
+    return users;
   }
 
   async searchByName(name: string, limit: number) {
@@ -114,10 +114,11 @@ export class UserService {
     currentUserId: string,
   ) {
     if (id !== currentUserId)
-      throw new UnauthorizedException('Não é permitido alterar outro usuário');
+      throw new ForbiddenException('Não é permitido alterar outro usuário');
 
     const user = await this.userRepo.findOne({
       where: { id },
+      select: ['id', 'name', 'email', 'passwordHash'],
     });
 
     if (!user) throw new NotFoundException('Usuário não encontrado');
@@ -127,9 +128,19 @@ export class UserService {
     }
 
     if (updateUserDto.password) {
+      const currentPasswordValid = await this.hashingService.compare(
+        updateUserDto.currentPassword ?? '',
+        user.passwordHash,
+      );
+
+      if (!currentPasswordValid) {
+        throw new ForbiddenException('Senha atual incorreta.');
+      }
+
       user.passwordHash = await this.hashingService.hash(
         updateUserDto.password,
       );
+      user.passwordChangedAt = new Date();
     }
 
     const saved = await this.userRepo.save(user);
@@ -138,7 +149,7 @@ export class UserService {
 
   async remove(id: string, currentUserId: string) {
     if (id !== currentUserId)
-      throw new UnauthorizedException('Não é permitido remover outro usuário');
+      throw new ForbiddenException('Não é permitido remover outro usuário');
 
     const result = await this.userRepo.delete({ id });
 

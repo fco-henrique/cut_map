@@ -8,6 +8,7 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Public } from './decorators/public.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
 import { VerifyEmailDto } from 'src/email/dto/verify-email.dto';
 import { ResendCodeDto } from 'src/email/dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -31,6 +32,18 @@ export class AuthController {
     return this.authService.refresh(dto.refreshToken);
   }
 
+  @Public()
+  @Post('logout')
+  logout(@Body() dto: RefreshDto) {
+    return this.authService.logout(dto.refreshToken);
+  }
+
+  @Post('logout-all')
+  logoutAll(@CurrentUser('sub') userId: string) {
+    return this.authService.logoutAll(userId);
+  }
+
+  @Public()
   @Post('verify-email')
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto.email, dto.code);
