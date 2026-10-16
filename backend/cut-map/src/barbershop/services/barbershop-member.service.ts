@@ -202,6 +202,20 @@ export class BarbershopMemberService {
     };
   }
 
+  async searchUsersToAdd(barbershopId: string, name: string, limit: number) {
+    const [candidates, currentMembers] = await Promise.all([
+      this.userService.searchByName(name, limit),
+      this.barbershopMemberRepo.find({
+        where: { barbershop: { id: barbershopId } },
+        relations: { user: true },
+      }),
+    ]);
+
+    const memberIds = new Set(currentMembers.map(m => m.user.id));
+
+    return candidates.filter(user => !memberIds.has(user.id));
+  }
+
   async listBarbershopMembers(userId: string, barbershopId: string) {
     const isMember = await this.checkIfUserHasRole(barbershopId, userId, [
       BarbershopRole.OWNER,
