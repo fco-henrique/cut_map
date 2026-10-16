@@ -44,11 +44,14 @@ export class EmailService {
   public generateVerificationCode(): string {
     const chars =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      const randomIndex = randomInt(0, chars.length);
-      code += chars[randomIndex];
-    }
+    let code: string;
+    do {
+      code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars[randomInt(0, chars.length)];
+      }
+    } while (!/[A-Z]/.test(code) || !/[a-z]/.test(code) || !/[0-9]/.test(code));
+
     return code;
   }
 }

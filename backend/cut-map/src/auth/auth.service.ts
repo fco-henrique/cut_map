@@ -93,7 +93,11 @@ export class AuthService {
       type: 'access',
     };
 
-    return this.jwtService.signAsync(payload, { expiresIn: '15m' });
+    return this.jwtService.signAsync(payload, {
+      expiresIn: '15m',
+      audience: this.jwtConfiguration.audience,
+      issuer: this.jwtConfiguration.issuer,
+    });
   }
 
   private async generateRefreshToken(user: User) {
