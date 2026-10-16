@@ -169,10 +169,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(height: 20.h),
 
                   // SEÇÃO: MAPA (deriva do estado de "próximas a você")
-                  ValueListenableBuilder<BarbershopsState>(
-                    valueListenable: _controller.nearbyState,
-                    builder: (context, state, child) {
-                      final List<BarbershopModel> barbearias = switch (state) {
+                  ListenableBuilder(
+                    listenable: Listenable.merge([
+                      _controller.nearbyState,
+                      _controller.currentLocation,
+                    ]),
+                    builder: (context, child) {
+                      final List<BarbershopModel> barbearias = switch (
+                          _controller.nearbyState.value) {
                         SectionSuccessState<List<BarbershopModel>>(
                           :final data,
                         ) =>
@@ -182,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       return CustomMapPreview(
                         centro: _controller.userLocation,
+                        userLocation: _controller.currentLocation.value,
                         barbearias: barbearias,
                         onVerNoMapa: () {},
                       );

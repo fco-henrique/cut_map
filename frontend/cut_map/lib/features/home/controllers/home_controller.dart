@@ -26,13 +26,14 @@ class HomeScreenController extends ChangeNotifier {
   final ValueNotifier<BarbershopsState> topRatedState =
       ValueNotifier(const SectionInitialState());
 
+  final ValueNotifier<LatLng?> currentLocation = ValueNotifier(null);
+
   // Usada como fallback quando o usuário nega permissão de localização
   // ou o serviço de GPS está desativado.
   static const _fallbackLocation = LatLng(-4.973298, -39.017563);
 
-  LatLng? _userLocation;
-  LatLng get userLocation => _userLocation ?? _fallbackLocation;
-  bool get isUsingFallbackLocation => _userLocation == null;
+  LatLng get userLocation => currentLocation.value ?? _fallbackLocation;
+  bool get isUsingFallbackLocation => currentLocation.value == null;
 
   /// Dispara todas as seções em paralelo. Uma seção falhando não
   /// impede as outras de carregarem normalmente.
@@ -45,12 +46,13 @@ class HomeScreenController extends ChangeNotifier {
 
   Future<void> loadNearby() async {
     nearbyState.value = const SectionLoadingState();
+    currentLocation.value = null;
 
     LatLng locationToUse = _fallbackLocation;
 
     try {
       locationToUse = await _locationService.getUserLocation();
-      _userLocation = locationToUse;
+      currentLocation.value = locationToUse;
     } on LocationServiceException catch (locationError) {
       if (locationError.reason == LocationFailureReason.permissionDeniedForever) {
         // Bloqueio persistente: vale a pena parar aqui e oferecer um
@@ -115,6 +117,7 @@ class HomeScreenController extends ChangeNotifier {
   void dispose() {
     nearbyState.dispose();
     topRatedState.dispose();
+    currentLocation.dispose();
     super.dispose();
   }
 }

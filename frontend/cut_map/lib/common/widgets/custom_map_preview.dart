@@ -8,12 +8,14 @@ import 'package:latlong2/latlong.dart';
 class CustomMapPreview extends StatelessWidget {
   final List<BarbershopModel> barbearias;
   final LatLng centro;
+  final LatLng? userLocation;
   final VoidCallback onVerNoMapa;
 
   const CustomMapPreview({
     super.key,
     required this.barbearias,
     required this.centro,
+    required this.userLocation,
     required this.onVerNoMapa,
   });
 
@@ -27,6 +29,7 @@ class CustomMapPreview extends StatelessWidget {
         child: Stack(
           children: [
             FlutterMap(
+              key: ValueKey('${centro.latitude},${centro.longitude}'),
               options: MapOptions(
                 initialCenter: centro,
                 initialZoom: 17,
@@ -53,6 +56,17 @@ class CustomMapPreview extends StatelessWidget {
                       )
                       .toList(),
                 ),
+                if (userLocation != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: userLocation!,
+                        width: 36,
+                        height: 36,
+                        child: const _UserLocationMarker(),
+                      ),
+                    ],
+                  ),
               ],
             ),
 
@@ -71,7 +85,9 @@ class CustomMapPreview extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'próximas a você',
+                    userLocation == null
+                        ? 'Localização indisponível'
+                        : 'próximas a você',
                     style: TextStyle(
                       color: Colors.black.withValues(alpha: 0.7),
                       fontSize: 13.s,
@@ -105,6 +121,35 @@ class CustomMapPreview extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UserLocationMarker extends StatelessWidget {
+  const _UserLocationMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.2),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+          ),
         ),
       ),
     );
