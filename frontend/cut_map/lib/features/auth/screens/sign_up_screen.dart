@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:cut_map/app.dart';
 import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:cut_map/common/constants/app_fonts.dart';
 import 'package:cut_map/common/extensions/sizes.dart';
@@ -41,10 +40,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (state is SignUpScreenSuccessState) {
         context.push(
           NamedRoutes.emailVerify,
-          extra: {
-            'email': _emailController.text.trim(),
-            'context': VerificationContext.signUp,
-          },
+          extra: VerificationRouteData(
+            email: _emailController.text.trim(),
+            context: VerificationContext.signUp,
+          ),
         );
       } else if (state is SignUpScreenErrorState) {
         CustomSnackbar.show(

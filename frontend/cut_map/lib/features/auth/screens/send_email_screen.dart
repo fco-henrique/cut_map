@@ -1,4 +1,3 @@
-import 'package:cut_map/app.dart';
 import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:cut_map/common/constants/app_fonts.dart';
 import 'package:cut_map/common/extensions/sizes.dart';
@@ -35,10 +34,10 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
     if (state is SendEmailScreenSuccessState) {
       context.go(
         NamedRoutes.emailVerify,
-        extra: {
-          'email': _emailController.text.trim(),
-          'context': VerificationContext.forgotPassword,
-        },
+        extra: VerificationRouteData(
+          email: _emailController.text.trim(),
+          context: VerificationContext.forgotPassword,
+        ),
       );
     } else if (state is SendEmailScreenErrorState) {
       CustomSnackbar.show(

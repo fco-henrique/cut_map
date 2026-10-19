@@ -1,4 +1,4 @@
-import 'package:cut_map/app.dart';
+import 'package:cut_map/common/routes/named_routes.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/features/auth/services/auth_service.dart';
 import 'package:cut_map/features/auth/states/verify_email_state.dart';

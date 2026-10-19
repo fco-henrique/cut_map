@@ -11,3 +11,12 @@ class NamedRoutes {
   static const String home = "/home";
   static const String main = "/main";
 }
+
+enum VerificationContext { signUp, forgotPassword }
+
+class VerificationRouteData {
+  final String email;
+  final VerificationContext context;
+
+  const VerificationRouteData({required this.email, required this.context});
+}
