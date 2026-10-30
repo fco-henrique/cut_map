@@ -43,6 +43,11 @@ class AppFonts {
     fontSize: 20,
     fontWeight: FontWeight.w600,
   );
+  static const TextStyle semiBold12 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
   static const TextStyle bold26 = TextStyle(
     fontFamily: 'Roboto',
     fontSize: 26,
@@ -76,6 +81,21 @@ class AppFonts {
   static const TextStyle bold12 = TextStyle(
     fontFamily: 'Roboto',
     fontSize: 12,
+    fontWeight: FontWeight.bold,
+  );
+  static const TextStyle bold10 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 10,
+    fontWeight: FontWeight.bold,
+  );
+  static const TextStyle extraBold24 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+  );
+  static const TextStyle extraBold16 = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 16,
     fontWeight: FontWeight.bold,
   );
 }
