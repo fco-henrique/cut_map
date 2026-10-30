@@ -41,4 +41,11 @@ export class GetBarbershopsFilterDto {
   @Min(1)
   @Max(50)
   limit?: number = 10;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  radiusKm?: number = 5;
 }

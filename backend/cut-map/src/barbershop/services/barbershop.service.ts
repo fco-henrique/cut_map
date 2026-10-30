@@ -70,21 +70,21 @@ export class BarbershopService {
   }
 
   async findAll(filters: GetBarbershopsFilterDto) {
-    const { sortBy, lat, lng, limit = 10 } = filters;
+    const { sortBy, lat, lng, limit = 10, radiusKm = 5 } = filters;
 
     const query = this.barbershopRepo.createQueryBuilder('barbershop');
 
     if (sortBy === 'distance') {
-      const distanceExpr = `(6371 * acos(
+      const distanceExpr = `(6371 * acos(least(1, greatest(-1,
       cos(radians(:lat)) * cos(radians(barbershop.address.latitude)) *
       cos(radians(barbershop.address.longitude) - radians(:lng)) +
       sin(radians(:lat)) * sin(radians(barbershop.address.latitude))
-    ))`;
+    ))))`;
 
       query
         .addSelect(distanceExpr, 'distance')
         .setParameters({ lat, lng })
-        .where(`${distanceExpr} <= :maxDistance`, { maxDistance: 5 })
+        .where(`${distanceExpr} <= :maxDistance`, { maxDistance: radiusKm })
         .orderBy('distance', 'ASC');
     } else if (sortBy === 'rating') {
       query.orderBy('barbershop.averageRating', 'DESC');

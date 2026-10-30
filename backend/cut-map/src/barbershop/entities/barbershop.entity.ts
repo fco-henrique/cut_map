@@ -18,6 +18,22 @@ export class Barbershop {
   @Column()
   name: string;
 
+  // Nullable to preserve barbershops created before contact details existed.
+  @Column({ type: 'varchar', length: 11, nullable: true })
+  phone: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  openingHours: Array<{
+    dayOfWeek: number;
+    opensAt: string;
+    closesAt: string;
+    breakStartsAt?: string;
+    breakEndsAt?: string;
+  }>;
+
   @Column(() => Address)
   address: Address;
 
