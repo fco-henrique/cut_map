@@ -1,16 +1,19 @@
-# cut_map
+# Aplicativo Cut Map
 
-A new Flutter project.
+Aplicativo Flutter para encontrar barbearias próximas e cadastrar estabelecimentos. Veja o [guia principal](../../README.md) para preparar também a API.
 
-## Getting Started
+## Desenvolvimento local
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://IP_DO_COMPUTADOR:3000
+```
 
-A few resources to get you started if this is your first Flutter project:
+Em um celular físico, use o IP local do computador que executa a API; `localhost` apontaria para o celular. Computador e celular precisam estar na mesma rede.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Verificação
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter analyze
+flutter test
+```
