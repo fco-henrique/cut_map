@@ -48,7 +48,7 @@ class _CustomPasswordFormFieldState extends State<CustomPasswordFormField> {
       finalHelperText = widget.helperText;
     }
 
-    Widget? _buildSuffixIcon() {
+    Widget? buildSuffixIcon() {
       if (!(widget.canTogglePassword ?? true)) return null;
 
       return InkWell(
@@ -75,7 +75,7 @@ class _CustomPasswordFormFieldState extends State<CustomPasswordFormField> {
       hintText: widget.hintText,
       labelText: widget.labelText,
       prefixIcon: widget.prefixIcon,
-      suffixIcon: _buildSuffixIcon(),
+      suffixIcon: buildSuffixIcon(),
     );
   }
 }
