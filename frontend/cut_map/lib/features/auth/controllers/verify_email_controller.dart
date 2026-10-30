@@ -1,3 +1,4 @@
+import 'package:cut_map/common/routes/named_routes.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/features/auth/services/auth_service.dart';
 import 'package:cut_map/features/auth/states/verify_email_state.dart';
@@ -29,7 +30,7 @@ class VerifyEmailScreenController extends ChangeNotifier {
         accessToken: tokens['accessToken'] as String,
         refreshToken: tokens['refreshToken'] as String,
       );
-      
+
       _changeState(VerifyEmailScreenSuccessState());
     } catch (e) {
       final errorMessage = e.toString();
@@ -48,11 +49,25 @@ class VerifyEmailScreenController extends ChangeNotifier {
     }
   }
 
-  Future<void> resendVerificationEmail(String email) async {
+  /// Reenvia o código de verificação.
+  ///
+  /// IMPORTANTE: essa tela é usada em dois contextos (cadastro de conta e
+  /// recuperação de senha). Cada contexto usa um código diferente no
+  /// backend (emailVerificationCode x resetPasswordCode), então o reenvio
+  /// precisa chamar o endpoint certo de acordo com o [context] atual,
+  /// senão o código de reset nunca é atualizado.
+  Future<void> resendVerificationEmail(
+    String email,
+    VerificationContext context,
+  ) async {
     _changeState(VerifyEmailScreenLoadingState());
 
     try {
-      await _authService.resendVerificationEmail(email: email);
+      if (context == VerificationContext.forgotPassword) {
+        await _authService.forgotPassword(email: email);
+      } else {
+        await _authService.resendVerificationEmail(email: email);
+      }
       _changeState(VerifyEmailScreenResendSuccessState());
     } catch (e) {
       final errorMessage = e.toString();

@@ -1,12 +1,11 @@
-import 'package:cut_map/app.dart';
-import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/constants/app_fonts.dart';
-import 'package:cut_map/commom/extensions/sizes.dart';
-import 'package:cut_map/commom/routes/named_routes.dart';
-import 'package:cut_map/commom/validators/inputs_validator.dart';
-import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
-import 'package:cut_map/commom/widgets/custom_snackbar.dart';
-import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
+import 'package:cut_map/common/constants/app_fonts.dart';
+import 'package:cut_map/common/extensions/sizes.dart';
+import 'package:cut_map/common/routes/named_routes.dart';
+import 'package:cut_map/common/validators/inputs_validator.dart';
+import 'package:cut_map/common/widgets/custom_primary_buttom.dart';
+import 'package:cut_map/common/widgets/custom_snackbar.dart';
+import 'package:cut_map/common/widgets/custom_text_form_field.dart';
 import 'package:cut_map/features/auth/controllers/send_email_controller.dart';
 import 'package:cut_map/features/auth/states/send_email_state.dart';
 import 'package:cut_map/locator.dart';
@@ -27,34 +26,44 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+  void _onControllerChanged() {
+    final state = _controller.state;
+
+    if (!mounted) return;
+
+    if (state is SendEmailScreenSuccessState) {
+      context.go(
+        NamedRoutes.emailVerify,
+        extra: VerificationRouteData(
+          email: _emailController.text.trim(),
+          context: VerificationContext.forgotPassword,
+        ),
+      );
+    } else if (state is SendEmailScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown
+            ? 'Servidor Indisponível'
+            : 'Falha ao enviar e-mail',
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onControllerChanged);
+  }
 
-    _controller.addListener(() {
-      final state = _controller.state;
-
-      if (state is SendEmailScreenSuccessState) {
-        context.go(
-          NamedRoutes.emailVerify,
-          extra: {
-            'email': _emailController.text.trim(),
-            'context': VerificationContext.forgotPassword,
-          },
-        );
-      } else if (state is SendEmailScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? 'Servidor Indisponível'
-              : 'Falha ao enviar e-mail',
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _emailController.dispose();
+    super.dispose();
   }
 
   @override
@@ -156,7 +165,9 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
                       final valid = _formKey.currentState?.validate() ?? false;
 
                       if (valid) {
-                        _controller.forgotPassword(_emailController.text);
+                        _controller.forgotPassword(
+                          _emailController.text.trim(),
+                        );
                       }
                     },
                   );

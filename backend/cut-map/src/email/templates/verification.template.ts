@@ -8,7 +8,7 @@ export function getVerificationEmailTemplate(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
 </head>
 <body style="margin:0;padding:0;background:#1a1a1a;font-family:'DM Sans',sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0">
@@ -33,7 +33,7 @@ export function getVerificationEmailTemplate(
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border:1px solid #2a2a2a;border-left:4px solid #F5C800;border-radius:4px;margin:0 0 32px;">
             <tr><td align="center" style="padding:24px;">
               <span style="color:#666;font-size:11px;letter-spacing:3px;text-transform:uppercase;display:block;margin-bottom:12px;">Seu código de verificação</span>
-              <span style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:12px;color:#F5C800;display:block;">${code}</span>
+              <span style="font-family:'JetBrains Mono','Courier New',Courier,monospace;font-weight:600;font-size:38px;letter-spacing:8px;color:#F5C800;display:block;">${code}</span>
               <span style="color:#555;font-size:12px;margin-top:10px;display:block;">Expira em 15 minutos</span>
             </td></tr>
           </table>

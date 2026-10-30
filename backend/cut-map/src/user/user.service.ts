@@ -1,12 +1,13 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { QueryFailedError, Repository, ILike } from 'typeorm';
 import { User } from './entities/user.entity';
 import { HashingService } from 'src/auth/hashing/hashing.service';
 import { EmailService } from 'src/email/email.service';
@@ -19,6 +20,14 @@ export class UserService {
     private readonly hashingService: HashingService,
     private readonly emailService: EmailService,
   ) {}
+
+  private toPublicUser(user: User) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    };
+  }
 
   async create(createUserDto: CreateUserDto) {
     try {
@@ -48,11 +57,14 @@ export class UserService {
         return {
           message:
             'Cadastro realizado, mas houve instabilidade no envio do e-mail. Por favor, solicite um novo código na tela de login.',
-          user,
+          user: this.toPublicUser(user),
         };
       }
 
-      return { message: 'Cadastro realizado. Verifique seu e-mail.', user };
+      return {
+        message: 'Cadastro realizado. Verifique seu e-mail.',
+        user: this.toPublicUser(user),
+      };
     } catch (error) {
       if (
         error instanceof QueryFailedError &&
@@ -71,11 +83,6 @@ export class UserService {
     }
   }
 
-  async findAll() {
-    const users = await this.userRepo.find();
-    return users;
-  }
-
   async findOne(id: string) {
     const user = await this.userRepo.findOne({ where: { id } });
 
@@ -85,9 +92,33 @@ export class UserService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async findAll() {
+    const users = await this.userRepo.find();
+    return users;
+  }
+
+  async searchByName(name: string, limit: number) {
+    const users = await this.userRepo.find({
+      where: { name: ILike(`%${name}%`) },
+      select: ['id', 'name'],
+      order: { name: 'ASC' },
+      take: limit,
+    });
+
+    return users;
+  }
+
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    currentUserId: string,
+  ) {
+    if (id !== currentUserId)
+      throw new ForbiddenException('Não é permitido alterar outro usuário');
+
     const user = await this.userRepo.findOne({
       where: { id },
+      select: ['id', 'name', 'email', 'passwordHash'],
     });
 
     if (!user) throw new NotFoundException('Usuário não encontrado');
@@ -97,15 +128,29 @@ export class UserService {
     }
 
     if (updateUserDto.password) {
+      const currentPasswordValid = await this.hashingService.compare(
+        updateUserDto.currentPassword ?? '',
+        user.passwordHash,
+      );
+
+      if (!currentPasswordValid) {
+        throw new ForbiddenException('Senha atual incorreta.');
+      }
+
       user.passwordHash = await this.hashingService.hash(
         updateUserDto.password,
       );
+      user.passwordChangedAt = new Date();
     }
 
-    return this.userRepo.save(user);
+    const saved = await this.userRepo.save(user);
+    return this.toPublicUser(saved);
   }
 
-  async remove(id: string) {
+  async remove(id: string, currentUserId: string) {
+    if (id !== currentUserId)
+      throw new ForbiddenException('Não é permitido remover outro usuário');
+
     const result = await this.userRepo.delete({ id });
 
     if (result.affected === 0)

@@ -6,11 +6,20 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
+import { BarbershopModule } from './barbershop/barbershop.module';
+import { ReviewModule } from './review/review.module';
 import appConfig from './app.config';
+import { validateEnv } from './env.validation';
+import jwtConfig from './auth/config/jwt.config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      validate: validateEnv,
+      load: [appConfig, jwtConfig],
+      isGlobal: true,
+    }),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule.forFeature(appConfig)],
       inject: [appConfig.KEY],
@@ -27,9 +36,12 @@ import appConfig from './app.config';
         };
       },
     }),
+
     UserModule,
     AuthModule,
     EmailModule,
+    BarbershopModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

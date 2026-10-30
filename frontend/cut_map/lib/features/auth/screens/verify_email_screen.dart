@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:cut_map/app.dart';
-import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/constants/app_fonts.dart';
-import 'package:cut_map/commom/extensions/sizes.dart';
-import 'package:cut_map/commom/routes/named_routes.dart';
-import 'package:cut_map/commom/validators/inputs_validator.dart';
-import 'package:cut_map/commom/widgets/custom_codig_form_field.dart';
-import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
-import 'package:cut_map/commom/widgets/custom_snackbar.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
+import 'package:cut_map/common/constants/app_fonts.dart';
+import 'package:cut_map/common/extensions/sizes.dart';
+import 'package:cut_map/common/routes/named_routes.dart';
+import 'package:cut_map/common/validators/inputs_validator.dart';
+import 'package:cut_map/common/widgets/custom_codig_form_field.dart';
+import 'package:cut_map/common/widgets/custom_primary_buttom.dart';
+import 'package:cut_map/common/widgets/custom_snackbar.dart';
 import 'package:cut_map/features/auth/controllers/verify_email_controller.dart';
 import 'package:cut_map/features/auth/states/verify_email_state.dart';
 import 'package:cut_map/locator.dart';
@@ -59,43 +58,47 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     });
   }
 
+  void _onControllerChanged() {
+    final state = _controller.state;
+
+    if (!mounted) return;
+
+    if (state is VerifyEmailScreenSuccessState) {
+      context.go(NamedRoutes.main);
+    } else if (state is VerifyEmailScreenResendSuccessState) {
+      CustomSnackbar.show(
+        context,
+        title: "Código Reenviado",
+        message: "Verifique sua caixa de entrada e spam.",
+        type: SnackbarType.success,
+      );
+    } else if (state is VerifyEmailScreenResetSuccessState) {
+      context.push(NamedRoutes.changePassword, extra: state.resetToken);
+    } else if (state is VerifyEmailScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown
+            ? "Servidor Indisponível"
+            : "Falha na Verificação",
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     startTimer();
-
-    _controller.addListener(() {
-      final state = _controller.state;
-
-      if (state is VerifyEmailScreenSuccessState) {
-        context.go(NamedRoutes.welcome);
-      } else if (state is VerifyEmailScreenResendSuccessState) {
-        CustomSnackbar.show(
-          context,
-          title: "Código Reenviado",
-          message: "Verifique sua caixa de entrada e spam.",
-          type: SnackbarType.success,
-        );
-      } else if (state is VerifyEmailScreenResetSuccessState) {
-        context.push(NamedRoutes.changePassword, extra: state.resetToken);
-      } else if (state is VerifyEmailScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? "Servidor Indisponível"
-              : "Falha na Verificação",
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
+    _controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _controller.removeListener(_onControllerChanged);
     _codigController.dispose();
     super.dispose();
   }
@@ -215,6 +218,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                                 startTimer();
                                 _controller.resendVerificationEmail(
                                   widget.email,
+                                  widget.context,
                                 );
                               }
                             : null,

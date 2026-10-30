@@ -1,12 +1,12 @@
-import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/constants/app_fonts.dart';
-import 'package:cut_map/commom/extensions/sizes.dart';
-import 'package:cut_map/commom/routes/named_routes.dart';
-import 'package:cut_map/commom/validators/inputs_validator.dart';
-import 'package:cut_map/commom/widgets/custom_password_form_field.dart';
-import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
-import 'package:cut_map/commom/widgets/custom_snackbar.dart';
-import 'package:cut_map/commom/widgets/custom_text_form_field.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
+import 'package:cut_map/common/constants/app_fonts.dart';
+import 'package:cut_map/common/extensions/sizes.dart';
+import 'package:cut_map/common/routes/named_routes.dart';
+import 'package:cut_map/common/validators/inputs_validator.dart';
+import 'package:cut_map/common/widgets/custom_password_form_field.dart';
+import 'package:cut_map/common/widgets/custom_primary_buttom.dart';
+import 'package:cut_map/common/widgets/custom_snackbar.dart';
+import 'package:cut_map/common/widgets/custom_text_form_field.dart';
 import 'package:cut_map/features/auth/controllers/sign_in_controller.dart';
 import 'package:cut_map/features/auth/states/sign_in_state.dart';
 import 'package:cut_map/locator.dart';
@@ -27,8 +27,33 @@ class _SignInScreenState extends State<SignInScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+  void _onControllerChanged() {
+    if (!mounted) return;
+
+    final state = _controller.state;
+    if (state is SignInScreenUnverifiedState) {
+      context.push(
+        NamedRoutes.emailVerify,
+        extra: VerificationRouteData(
+          email: state.email,
+          context: VerificationContext.signUp,
+        ),
+      );
+    } else if (state is SignInScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown ? 'Servidor Indisponível' : 'Falha no Login',
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
+
   @override
   void dispose() {
+    _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -39,24 +64,7 @@ class _SignInScreenState extends State<SignInScreen> {
   void initState() {
     super.initState();
 
-    _controller.addListener(() {
-      if (!mounted) return;
-
-      final state = _controller.state;
-
-      if (state is SignInScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? 'Servidor Indisponível'
-              : 'Falha no Login',
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
+    _controller.addListener(_onControllerChanged);
   }
 
   @override

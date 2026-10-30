@@ -1,0 +1,40 @@
+name: Relatar bug
+description: Descreva um problema reproduzível no aplicativo ou na API.
+title: "fix: "
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afetada
+      options:
+        - Frontend
+        - Backend
+        - Ambos
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      description: Informe a sequência que leva ao problema.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado atual
+      description: Inclua mensagens de erro sem tokens, senhas ou outros dados sensíveis.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      placeholder: "Ex.: Android físico, versão do Flutter, branch"

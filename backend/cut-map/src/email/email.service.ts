@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { getVerificationEmailTemplate } from './templates/verification.template';
+import { getPasswordResetEmailTemplate } from './templates/password-reset.template';
 
 @Injectable()
 export class EmailService {
@@ -27,14 +28,30 @@ export class EmailService {
     });
   }
 
+  async sendPasswordResetCode(
+    to: string,
+    name: string,
+    code: string,
+  ): Promise<void> {
+    await this.transporter.sendMail({
+      from: `"Cut Map" <${process.env.MAIL_USER}>`,
+      to,
+      subject: 'Redefinir senha — Cut Map',
+      html: getPasswordResetEmailTemplate(name, code),
+    });
+  }
+
   public generateVerificationCode(): string {
     const chars =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      const randomIndex = randomInt(0, chars.length);
-      code += chars[randomIndex];
-    }
+    let code: string;
+    do {
+      code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars[randomInt(0, chars.length)];
+      }
+    } while (!/[A-Z]/.test(code) || !/[a-z]/.test(code) || !/[0-9]/.test(code));
+
     return code;
   }
 }

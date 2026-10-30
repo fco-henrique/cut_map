@@ -1,11 +1,11 @@
-import 'package:cut_map/commom/constants/app_colors.dart';
-import 'package:cut_map/commom/constants/app_fonts.dart';
-import 'package:cut_map/commom/extensions/sizes.dart';
-import 'package:cut_map/commom/routes/named_routes.dart';
-import 'package:cut_map/commom/validators/inputs_validator.dart';
-import 'package:cut_map/commom/widgets/custom_password_form_field.dart';
-import 'package:cut_map/commom/widgets/custom_primary_buttom.dart';
-import 'package:cut_map/commom/widgets/custom_snackbar.dart';
+import 'package:cut_map/common/constants/app_colors.dart';
+import 'package:cut_map/common/constants/app_fonts.dart';
+import 'package:cut_map/common/extensions/sizes.dart';
+import 'package:cut_map/common/routes/named_routes.dart';
+import 'package:cut_map/common/validators/inputs_validator.dart';
+import 'package:cut_map/common/widgets/custom_password_form_field.dart';
+import 'package:cut_map/common/widgets/custom_primary_buttom.dart';
+import 'package:cut_map/common/widgets/custom_snackbar.dart';
 import 'package:cut_map/features/auth/controllers/change_password_controller.dart';
 import 'package:cut_map/features/auth/states/change_password_state.dart';
 import 'package:cut_map/locator.dart';
@@ -29,28 +29,39 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+  void _onControllerChanged() {
+    final state = _controller.state;
+
+    if (!mounted) return;
+
+    if (state is ChangePasswordScreenSuccessState) {
+      context.go(NamedRoutes.signIn);
+    } else if (state is ChangePasswordScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown
+            ? "Servidor Indisponível"
+            : "Falha ao alterar senha",
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onControllerChanged);
+  }
 
-    _controller.addListener(() {
-      final state = _controller.state;
-
-      if (state is ChangePasswordScreenSuccessState) {
-        context.go(NamedRoutes.signIn);
-      } else if (state is ChangePasswordScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? "Servidor Indisponível"
-              : "Falha ao alterar senha",
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override

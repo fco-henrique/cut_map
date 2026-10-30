@@ -4,6 +4,13 @@ class SignInScreenInitialState extends SignInScreenState {}
 
 class SignInScreenSuccessState extends SignInScreenState {}
 
+class SignInScreenUnverifiedState extends SignInScreenState {
+  final String email;
+  final String message;
+
+  SignInScreenUnverifiedState({required this.email, required this.message});
+}
+
 class SignInScreenLoadingState extends SignInScreenState {}
 
 class SignInScreenErrorState extends SignInScreenState {
