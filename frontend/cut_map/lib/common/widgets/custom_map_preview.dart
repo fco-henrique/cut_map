@@ -1,8 +1,8 @@
 import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:cut_map/common/extensions/sizes.dart';
+import 'package:cut_map/common/widgets/barbershop_map.dart';
 import 'package:cut_map/models/barbershop_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 class CustomMapPreview extends StatelessWidget {
@@ -10,6 +10,7 @@ class CustomMapPreview extends StatelessWidget {
   final LatLng centro;
   final LatLng? userLocation;
   final VoidCallback onVerNoMapa;
+  final ValueChanged<BarbershopModel> onBarbershopTap;
 
   const CustomMapPreview({
     super.key,
@@ -17,6 +18,7 @@ class CustomMapPreview extends StatelessWidget {
     required this.centro,
     required this.userLocation,
     required this.onVerNoMapa,
+    required this.onBarbershopTap,
   });
 
   @override
@@ -28,46 +30,11 @@ class CustomMapPreview extends StatelessWidget {
         width: double.infinity,
         child: Stack(
           children: [
-            FlutterMap(
-              key: ValueKey('${centro.latitude},${centro.longitude}'),
-              options: MapOptions(
-                initialCenter: centro,
-                initialZoom: 17,
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all,
-                ),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  userAgentPackageName: 'com.seuapp.pacote',
-                ),
-                MarkerLayer(
-                  markers: barbearias
-                      .where((b) => b.location != null)
-                      .map(
-                        (b) => Marker(
-                          point: b.location!,
-                          width: 36,
-                          height: 36,
-                          child: const _MarcadorBarbearia(),
-                        ),
-                      )
-                      .toList(),
-                ),
-                if (userLocation != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: userLocation!,
-                        width: 36,
-                        height: 36,
-                        child: const _UserLocationMarker(),
-                      ),
-                    ],
-                  ),
-              ],
+            BarbershopMap(
+              barbearias: barbearias,
+              centro: centro,
+              userLocation: userLocation,
+              onBarbershopTap: onBarbershopTap,
             ),
 
             Positioned(
@@ -103,7 +70,7 @@ class CustomMapPreview extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onVerNoMapa,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.yellow, // seu amarelo
+                  backgroundColor: AppColors.yellow,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -123,51 +90,6 @@ class CustomMapPreview extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _UserLocationMarker extends StatelessWidget {
-  const _UserLocationMarker();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.2),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MarcadorBarbearia extends StatelessWidget {
-  const _MarcadorBarbearia();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.7),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.amber, width: 2),
-      ),
-      child: const Icon(Icons.content_cut, color: Colors.amber, size: 18),
     );
   }
 }

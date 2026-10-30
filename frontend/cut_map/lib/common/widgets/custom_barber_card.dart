@@ -18,7 +18,7 @@ class CustomBarberCard extends StatefulWidget {
   const CustomBarberCard({
     super.key,
     this.isFavorite = false,
-    this.isOpen = true,
+    this.isOpen,
     required this.barberName,
     this.rating,
     this.reviewsCount,
@@ -110,7 +110,7 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
           ),
         ),
         //aviso de aberto
-        Positioned(
+        if (widget.isOpen != null) Positioned(
           bottom: 12.h,
           left: 12.w,
           child: Container(
@@ -142,6 +142,10 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
   }
 
   Widget _buildCardDetails() {
+    final locationDetails = [
+      if (widget.address?.isNotEmpty == true) widget.address!,
+      if (widget.distance?.isNotEmpty == true) widget.distance!,
+    ].join(' • ');
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -178,20 +182,22 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
           ),
           const SizedBox(height: 8),
 
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, color: AppColors.gray, size: 16),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  '${widget.address ?? 'Localização'} • ${widget.distance ?? '0.3km'}',
-                  style: AppFonts.regular14.apply(color: AppColors.gray),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          if (locationDetails.isNotEmpty)
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined,
+                    color: AppColors.gray, size: 16),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    locationDetails,
+                    style: AppFonts.regular14.apply(color: AppColors.gray),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: 16),
 
           SingleChildScrollView(
@@ -218,7 +224,7 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        widget.workingHours ?? '08:00 - 20:00',
+                        widget.workingHours ?? 'Horários não informados',
                         style: AppFonts.regular14.apply(color: AppColors.gray),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -228,15 +234,16 @@ class _CustomBarberCardState extends State<CustomBarberCard> {
                 ),
               ),
               const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  widget.startingPrice ?? 'A partir de R\$15',
-                  style: AppFonts.bold14.apply(color: AppColors.yellow),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
+              if (widget.startingPrice != null)
+                Flexible(
+                  child: Text(
+                    widget.startingPrice!,
+                    style: AppFonts.bold14.apply(color: AppColors.yellow),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                  ),
                 ),
-              ),
             ],
           ),
         ],

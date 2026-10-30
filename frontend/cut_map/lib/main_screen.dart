@@ -14,39 +14,44 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(), // Aba 0: Início
-    // const ExploreView(),    // Aba 1: Explorar
-    // const BarbershopsView(),// Aba 2: Barbearias
-    // const ProfileView(),    // Aba 3: Perfil
-    Container(
-      color: AppColors.background,
-      child: Center(
-        child: Text(
-          'Explorar',
-          style: TextStyle(fontSize: 24, color: Colors.white),
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeScreen(onExplore: _openExplore),
+      Container(
+        color: AppColors.background,
+        child: const Center(
+          child: Text(
+            'Explorar',
+            style: TextStyle(fontSize: 24, color: Colors.white),
+          ),
         ),
       ),
-    ),
-    Container(
-      color: AppColors.background,
-      child: Center(
-        child: Text(
-          'Barbearias',
-          style: TextStyle(fontSize: 24, color: Colors.white),
+      Container(
+        color: AppColors.background,
+        child: const Center(
+          child: Text(
+            'Barbearias',
+            style: TextStyle(fontSize: 24, color: Colors.white),
+          ),
         ),
       ),
-    ),
-    Container(
-      color: AppColors.background,
-      child: Center(
-        child: Text(
-          'Perfil',
-          style: TextStyle(fontSize: 24, color: Colors.white),
+      Container(
+        color: AppColors.background,
+        child: const Center(
+          child: Text(
+            'Perfil',
+            style: TextStyle(fontSize: 24, color: Colors.white),
+          ),
         ),
       ),
-    ),
-  ];
+    ];
+  }
+
+  void _openExplore() => setState(() => _currentIndex = 1);
 
   @override
   Widget build(BuildContext context) {

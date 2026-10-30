@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:cut_map/common/constants/app_fonts.dart';
 import 'package:cut_map/common/extensions/sizes.dart';
@@ -5,17 +7,19 @@ import 'package:cut_map/common/widgets/custom_barber_card.dart';
 import 'package:cut_map/common/widgets/custom_compact_barber_card.dart';
 import 'package:cut_map/common/widgets/custom_map_preview.dart';
 import 'package:cut_map/common/widgets/custom_notification_button.dart';
-import 'package:cut_map/common/widgets/custom_profile_avatar.dart';
 import 'package:cut_map/common/widgets/custom_text_form_field.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/features/home/controllers/home_controller.dart';
+import 'package:cut_map/features/home/screens/full_map_screen.dart';
 import 'package:cut_map/features/home/states/section_state.dart';
 import 'package:cut_map/locator.dart';
 import 'package:cut_map/models/barbershop_model.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.onExplore});
+
+  final VoidCallback onExplore;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -23,16 +27,33 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _controller = locator.get<HomeScreenController>();
+  late final Timer _clockTimer;
+
+  void _onBarbershopTap(BarbershopModel barbershop) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Detalhes de ${barbershop.name} em breve.')),
+    );
+  }
+
+  String? _distanceLabel(BarbershopModel barbershop) {
+    final km = barbershop.distanceFrom(_controller.currentLocation.value);
+    return km == null ? null : '${km.toStringAsFixed(1)} km';
+  }
 
   @override
   void dispose() {
-    super.dispose();
+    _clockTimer.cancel();
     _controller.dispose();
+    super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+
+    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.loadAll();
@@ -98,10 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                             notificationCount: 2,
                           ),
-                          CustomProfileAvatar(
-                            imageUrl: "assets/images/img_perfil.jpg",
-                            onTap: () {},
-                          ),
                         ],
                       ),
                     ],
@@ -165,6 +182,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     hintText: "Pesquisar barbearias",
                     prefixIcon: Icons.search,
                     padding: const EdgeInsets.symmetric(horizontal: 0),
+                    readOnly: true,
+                    onTap: widget.onExplore,
                   ),
                   SizedBox(height: 20.h),
 
@@ -188,7 +207,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         centro: _controller.userLocation,
                         userLocation: _controller.currentLocation.value,
                         barbearias: barbearias,
-                        onVerNoMapa: () {},
+                        onBarbershopTap: _onBarbershopTap,
+                        onVerNoMapa: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => FullMapScreen(
+                                barbearias: barbearias,
+                                centro: _controller.userLocation,
+                                userLocation: _controller.currentLocation.value,
+                                onBarbershopTap: _onBarbershopTap,
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -202,20 +233,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         "Próximas a você",
                         style: AppFonts.bold18.apply(color: AppColors.white),
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            "Ver todas ",
-                            style: AppFonts.medium16.apply(
-                              color: AppColors.yellow,
-                            ),
+                      InkWell(
+                        onTap: widget.onExplore,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Row(
+                            children: [
+                              Text('Ver todas ',
+                                  style: AppFonts.medium16.apply(color: AppColors.yellow)),
+                              const Icon(Icons.arrow_forward_ios,
+                                  size: 14, color: AppColors.yellow),
+                            ],
                           ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 14,
-                            color: AppColors.yellow,
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
@@ -224,9 +255,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   // CARDS DE BARBEARIAS COMPACTAS
                   SizedBox(
                     height: CustomCompactBarberCard.cardHeight.h,
-                    child: ValueListenableBuilder<BarbershopsState>(
-                      valueListenable: _controller.nearbyState,
-                      builder: (context, state, child) {
+                    child: ListenableBuilder(
+                      listenable: Listenable.merge([
+                        _controller.nearbyState,
+                        _controller.currentLocation,
+                      ]),
+                      builder: (context, child) {
+                        final state = _controller.nearbyState.value;
                         return switch (state) {
                           SectionLoadingState() => const Center(
                             child: CircularProgressIndicator(),
@@ -275,12 +310,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                               barbershop,
                                             ) => CustomCompactBarberCard(
                                               barberName: barbershop.name,
-                                              onTap: () {},
-                                              distance:
-                                                  barbershop.distanceInKm !=
-                                                      null
-                                                  ? '${barbershop.distanceInKm!.toStringAsFixed(1)} km'
-                                                  : null,
+                                              onTap: () => _onBarbershopTap(barbershop),
+                                              distance: _distanceLabel(barbershop),
+                                              isOpen: barbershop.isOpenAt(DateTime.now()),
                                               location:
                                                   barbershop.address.bairro,
                                               rating: barbershop.rating,
@@ -306,29 +338,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         "Mais bem avaliadas",
                         style: AppFonts.bold18.apply(color: AppColors.white),
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            "Ver todas ",
-                            style: AppFonts.medium16.apply(
-                              color: AppColors.yellow,
-                            ),
+                      InkWell(
+                        onTap: widget.onExplore,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Row(
+                            children: [
+                              Text('Ver todas ',
+                                  style: AppFonts.medium16.apply(color: AppColors.yellow)),
+                              const Icon(Icons.arrow_forward_ios,
+                                  size: 14, color: AppColors.yellow),
+                            ],
                           ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 14,
-                            color: AppColors.yellow,
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
 
                   // CARDS DE BARBEARIAS
                   SizedBox(height: 10.h),
-                  ValueListenableBuilder<BarbershopsState>(
-                    valueListenable: _controller.topRatedState,
-                    builder: (context, state, child) {
+                  ListenableBuilder(
+                    listenable: Listenable.merge([
+                      _controller.topRatedState,
+                      _controller.currentLocation,
+                    ]),
+                    builder: (context, child) {
+                      final state = _controller.topRatedState.value;
                       return switch (state) {
                         SectionLoadingState() => const Center(
                           child: CircularProgressIndicator(),
@@ -371,12 +407,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                     return CustomBarberCard(
                                       barberName: currentBarbershop.name,
+                                      rating: currentBarbershop.rating,
+                                      reviewsCount: currentBarbershop.reviewsCount,
+                                      isOpen: currentBarbershop.isOpenAt(DateTime.now()),
+                                      workingHours:
+                                          currentBarbershop.hoursLabelAt(DateTime.now()),
                                       address:
                                           currentBarbershop.address.formatted,
-                                      distance:
-                                          currentBarbershop.distanceInKm != null
-                                          ? '${currentBarbershop.distanceInKm!.toStringAsFixed(1)} km'
-                                          : null,
+                                      distance: _distanceLabel(currentBarbershop),
                                     );
                                   },
                                 ),

@@ -11,12 +11,21 @@ typedef BarbershopsState = SectionState<List<BarbershopModel>>;
 class HomeScreenController extends ChangeNotifier {
   final BarbershopService _barbershopService;
   final LocationService _locationService;
+  bool _disposed = false;
+  int _nearbyRequestId = 0;
+  int _topRatedRequestId = 0;
 
   HomeScreenController({
     required BarbershopService barbershopService,
     required LocationService locationService,
   })  : _barbershopService = barbershopService,
-        _locationService = locationService;
+        _locationService = locationService {
+    _barbershopService.addListener(_onBarbershopsChanged);
+  }
+
+  void _onBarbershopsChanged() {
+    loadAll();
+  }
 
   // Cada seção tem seu próprio ValueNotifier: quem escuta um deles
   // não é notificado quando outra seção muda de estado.
@@ -45,16 +54,20 @@ class HomeScreenController extends ChangeNotifier {
   }
 
   Future<void> loadNearby() async {
+    if (_disposed) return;
+    final requestId = ++_nearbyRequestId;
     nearbyState.value = const SectionLoadingState();
-    currentLocation.value = null;
 
-    LatLng locationToUse = _fallbackLocation;
+    LatLng locationToUse = currentLocation.value ?? _fallbackLocation;
 
     try {
       locationToUse = await _locationService.getUserLocation();
+      if (_disposed || requestId != _nearbyRequestId) return;
       currentLocation.value = locationToUse;
     } on LocationServiceException catch (locationError) {
+      if (_disposed || requestId != _nearbyRequestId) return;
       if (locationError.reason == LocationFailureReason.permissionDeniedForever) {
+        currentLocation.value = null;
         // Bloqueio persistente: vale a pena parar aqui e oferecer um
         // atalho pras configurações, em vez de seguir silenciosamente
         // com o fallback (o usuário provavelmente quer corrigir isso).
@@ -74,9 +87,10 @@ class HomeScreenController extends ChangeNotifier {
         lat: locationToUse.latitude,
         lng: locationToUse.longitude,
       );
-
+      if (_disposed || requestId != _nearbyRequestId) return;
       nearbyState.value = SectionSuccessState(data: barbershops);
     } catch (e) {
+      if (_disposed || requestId != _nearbyRequestId) return;
       nearbyState.value = SectionErrorState(
         message: _mapError(e),
         isServerDown: _isServerDown(e),
@@ -91,12 +105,16 @@ class HomeScreenController extends ChangeNotifier {
   }
 
   Future<void> loadTopRated() async {
+    if (_disposed) return;
+    final requestId = ++_topRatedRequestId;
     topRatedState.value = const SectionLoadingState();
 
     try {
       final barbershops = await _barbershopService.fetchAllBarbershops(sortBy: 'rating');
+      if (_disposed || requestId != _topRatedRequestId) return;
       topRatedState.value = SectionSuccessState(data: barbershops);
     } catch (e) {
+      if (_disposed || requestId != _topRatedRequestId) return;
       topRatedState.value = SectionErrorState(
         message: _mapError(e),
         isServerDown: _isServerDown(e),
@@ -115,6 +133,8 @@ class HomeScreenController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _barbershopService.removeListener(_onBarbershopsChanged);
     nearbyState.dispose();
     topRatedState.dispose();
     currentLocation.dispose();

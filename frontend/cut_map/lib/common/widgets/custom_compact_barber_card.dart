@@ -9,6 +9,7 @@ class CustomCompactBarberCard extends StatelessWidget {
   final int? reviewsCount;
   final String? location;
   final String? distance;
+  final bool? isOpen;
   final VoidCallback onTap;
 
   const CustomCompactBarberCard({
@@ -18,6 +19,7 @@ class CustomCompactBarberCard extends StatelessWidget {
     this.reviewsCount,
     this.location,
     this.distance,
+    this.isOpen,
     required this.onTap,
   });
 
@@ -67,23 +69,48 @@ class CustomCompactBarberCard extends StatelessWidget {
           ),
         ),
 
-        Positioned(
-          top: 8.h,
-          right: 8.w,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              color: AppColors.yellow,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              distance ?? '0.3km',
-              style: AppFonts.bold12.apply(
-                color: AppColors.background, 
+        if (isOpen != null)
+          Positioned(
+            bottom: 12.h,
+            left: 12.w,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isOpen == true
+                    ? AppColors.greenSnack.withValues(alpha: 0.2)
+                    : AppColors.red.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isOpen == true
+                      ? AppColors.greenSnack
+                      : AppColors.red,
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                isOpen == true ? 'Aberto' : 'Fechado',
+                style: AppFonts.bold12.apply(
+                  color: isOpen == true
+                      ? AppColors.greenSnack
+                      : AppColors.red,
+                ),
               ),
             ),
           ),
-        ),
+        if (distance != null)
+          Positioned(
+            top: 8.h,
+            right: 8.w,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: AppColors.yellow,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(distance!,
+                  style: AppFonts.bold12.apply(color: AppColors.background)),
+            ),
+          ),
       ],
     );
   }

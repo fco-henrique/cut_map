@@ -20,6 +20,8 @@ class CustomTextFormField extends StatefulWidget {
   final FormFieldValidator<String>? validator;
   final String? helperText;
   final String? counterText;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   const CustomTextFormField({
     super.key,
@@ -38,6 +40,8 @@ class CustomTextFormField extends StatefulWidget {
     this.validator,
     this.helperText,
     this.counterText,
+    this.readOnly = false,
+    this.onTap,
   });
 
   @override
@@ -61,6 +65,8 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
           widget.padding ??
           const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
       child: TextFormField(
+        readOnly: widget.readOnly,
+        onTap: widget.onTap,
         validator: widget.validator,
         inputFormatters: widget.inputFormatter,
         obscureText: widget.obscureText ?? false,
