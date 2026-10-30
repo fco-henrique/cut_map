@@ -1,5 +1,6 @@
 import 'package:cut_map/core/services/barbershop_service.dart';
 import 'package:cut_map/core/services/location_service.dart';
+import 'package:cut_map/core/services/reverse_geocoding_service.dart';
 import 'package:cut_map/features/auth/controllers/change_password_controller.dart';
 import 'package:cut_map/features/auth/controllers/send_email_controller.dart';
 import 'package:cut_map/features/auth/controllers/sign_in_controller.dart';
@@ -10,6 +11,8 @@ import 'package:cut_map/features/auth/services/auth_service.dart';
 import 'package:cut_map/core/network/api_client.dart';
 import 'package:cut_map/core/storage/token_storage.dart';
 import 'package:cut_map/features/home/controllers/home_controller.dart';
+import 'package:cut_map/features/barbershops/controllers/add_barbershop_controller.dart';
+import 'package:cut_map/features/barbershops/controllers/barbershops_controller.dart';
 import 'package:get_it/get_it.dart';
 
 final GetIt locator = GetIt.instance;
@@ -31,6 +34,7 @@ void setupLocator() {
     () => BarbershopService(api: locator<ApiClient>()),
   );
   locator.registerLazySingleton(() => LocationService());
+  locator.registerLazySingleton(() => ReverseGeocodingService());
 
   // CONTROLLERS
   locator.registerFactory(
@@ -52,6 +56,16 @@ void setupLocator() {
     () => HomeScreenController(
       barbershopService: locator<BarbershopService>(),
       locationService: locator<LocationService>(),
+    ),
+  );
+  locator.registerFactory(
+    () => AddBarbershopController(
+      barbershopService: locator<BarbershopService>(),
+    ),
+  );
+  locator.registerFactory(
+    () => BarbershopsController(
+      barbershopService: locator<BarbershopService>(),
     ),
   );
 }

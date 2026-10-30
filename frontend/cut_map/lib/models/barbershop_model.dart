@@ -3,6 +3,12 @@ import 'package:cut_map/models/address_model.dart';
 import 'package:cut_map/models/opening_hours_model.dart';
 import 'package:latlong2/latlong.dart';
 
+enum BarbershopStatus {
+  active,
+  inactive,
+  pending,
+}
+
 class BarbershopModel {
   final String id;
   final String name;
@@ -11,6 +17,9 @@ class BarbershopModel {
   final AddressModel address;
   final String imageUrl;
   final double? distanceInKm;
+  final String? phone;
+  final String? description;
+  final String? memberRole;
   final List<OpeningHoursModel> openingHours;
 
   BarbershopModel({
@@ -21,10 +30,14 @@ class BarbershopModel {
     this.reviewsCount = 0,
     this.imageUrl = "assets/images/img_barber.jpg",
     this.distanceInKm,
+    this.phone,
+    this.description,
+    this.memberRole,
     this.openingHours = const [],
   });
 
   factory BarbershopModel.fromJson(Map<String, dynamic> json) {
+    final members = json['members'];
     final hours = json['openingHours'];
     return BarbershopModel(
       id: json['id'] ?? '',
@@ -34,6 +47,11 @@ class BarbershopModel {
       reviewsCount: json['totalReviews'] ?? 0,
       imageUrl: json['imageUrl'] ?? 'assets/images/img_barber.jpg',
       distanceInKm: JsonParsers.toDoubleOrNull(json['distanceInKm']),
+      phone: json['phone'] as String?,
+      description: json['description'] as String?,
+      memberRole: members is List && members.isNotEmpty
+          ? (members.first as Map<String, dynamic>)['role'] as String?
+          : null,
       openingHours: hours is List
           ? hours.map((item) => OpeningHoursModel.fromJson(
               item as Map<String, dynamic>,
