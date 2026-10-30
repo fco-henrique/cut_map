@@ -1,5 +1,6 @@
 import 'package:cut_map/common/constants/app_colors.dart';
 import 'package:cut_map/common/widgets/custom_bottom_nav_bar.dart';
+import 'package:cut_map/features/barbershops/screens/barbershops_screen.dart';
 import 'package:cut_map/features/home/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,15 +31,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
-      Container(
-        color: AppColors.background,
-        child: const Center(
-          child: Text(
-            'Barbearias',
-            style: TextStyle(fontSize: 24, color: Colors.white),
-          ),
-        ),
-      ),
+      const BarbershopsScreen(),
       Container(
         color: AppColors.background,
         child: const Center(
