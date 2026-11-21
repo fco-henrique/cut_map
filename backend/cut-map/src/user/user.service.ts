@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -92,9 +93,14 @@ export class UserService {
     return user;
   }
 
-  async findAll() {
-    const users = await this.userRepo.find();
-    return users;
+  async findAll(currentUserId: string) {
+    if (!currentUserId) throw new UnauthorizedException();
+
+    const users = await this.userRepo.find({
+      where: { id: currentUserId },
+      select: { id: true, name: true, email: true },
+    });
+    return users.map(user => this.toPublicUser(user));
   }
 
   async searchByName(name: string, limit: number) {

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { BarbershopMember } from 'src/barbershop/entities/barbershop-member.entity';
 import { UserService } from 'src/user/user.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,6 +8,13 @@ import { CreateBarbershopDto } from '../dto/create-barbershop.dto';
 import { BarbershopRole } from '../enums/barbershop-role.enum';
 import { UpdateBarbershopDto } from '../dto/update-barbershop.dto';
 import { GetBarbershopsFilterDto } from '../dto/get-barbershop-filters.dto';
+import { toBarbershopResponse } from '../dto/barbershop-response';
+
+const memberSelection = {
+  id: true,
+  role: true,
+  user: { id: true, name: true },
+};
 
 @Injectable()
 export class BarbershopService {
@@ -66,7 +73,10 @@ export class BarbershopService {
       )
       .getMany();
 
-    return { message: 'Busca realizada com sucesso', barbershops };
+    return {
+      message: 'Busca realizada com sucesso',
+      barbershops: barbershops.map(toBarbershopResponse),
+    };
   }
 
   async findAll(filters: GetBarbershopsFilterDto) {
@@ -97,7 +107,7 @@ export class BarbershopService {
     if (sortBy === 'distance') {
       const { entities, raw } = await query.getRawAndEntities();
       const barbershops = entities.map((entity, index) => ({
-        ...entity,
+        ...toBarbershopResponse(entity),
         distanceInKm: parseFloat(
           Number((raw[index] as Record<string, number>).distance).toFixed(2),
         ),
@@ -106,36 +116,70 @@ export class BarbershopService {
     }
 
     const barbershops = await query.getMany();
-    return { message: 'Busca realizada com sucesso', barbershops };
+    return {
+      message: 'Busca realizada com sucesso',
+      barbershops: barbershops.map(toBarbershopResponse),
+    };
   }
 
   async findOneMe(barbershopId: string, ownerId: string) {
+    if (!ownerId) {
+      throw new NotFoundException('Barbearia não encontrada para este usuário');
+    }
+
     const barbershop = await this.barbershopRepo.findOne({
       where: {
         id: barbershopId,
         members: { user: { id: ownerId } },
       },
       relations: { members: { user: true } },
+      select: { members: memberSelection },
     });
 
     if (!barbershop) {
       throw new NotFoundException('Barbearia não encontrada para este usuário');
     }
 
-    return { message: 'Barbearia encontrada com sucesso', barbershop };
+    return {
+      message: 'Barbearia encontrada com sucesso',
+      barbershop: toBarbershopResponse({
+        ...barbershop,
+        members: barbershop.members.filter(
+          member => member.user?.id === ownerId,
+        ),
+      }),
+    };
   }
 
-  async findOne(barbershopId: string) {
-    const barbershop = await this.barbershopRepo.findOne({
-      where: { id: barbershopId },
-      relations: { members: { user: true } },
+  async findOne(barbershopId: string, userId?: string) {
+    const barbershop = await this.barbershopRepo.findOneBy({
+      id: barbershopId,
     });
 
     if (!barbershop) {
       throw new NotFoundException('Barbearia não encontrada');
     }
 
-    return { message: 'Barbearia encontrada com sucesso', barbershop };
+    const members = userId
+      ? await this.barbershopMemberRepo.find({
+          where: {
+            barbershop: {
+              id: barbershopId,
+              members: {
+                user: { id: userId },
+                role: In([BarbershopRole.OWNER, BarbershopRole.MANAGER]),
+              },
+            },
+          },
+          relations: { user: true },
+          select: memberSelection,
+        })
+      : [];
+
+    return {
+      message: 'Barbearia encontrada com sucesso',
+      barbershop: toBarbershopResponse({ ...barbershop, members }),
+    };
   }
 
   async update(barbershopId: string, updateBarbershopDto: UpdateBarbershopDto) {
@@ -152,7 +196,7 @@ export class BarbershopService {
 
     return {
       message: 'Barbearia atualizada com sucesso',
-      barbershop: updated,
+      barbershop: toBarbershopResponse(updated),
     };
   }
 

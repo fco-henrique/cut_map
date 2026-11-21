@@ -10,6 +10,7 @@ import { UserService } from 'src/user/user.service';
 import { BarbershopRole } from '../enums/barbershop-role.enum';
 import { BarbershopService } from './barbershop.service';
 import { AddMemberDto } from '../dto/add-member.dto';
+import { toMemberResponse } from '../dto/barbershop-response';
 
 @Injectable()
 export class BarbershopMemberService {
@@ -25,6 +26,8 @@ export class BarbershopMemberService {
     userId: string,
     requiredRoles: BarbershopRole[],
   ): Promise<boolean> {
+    if (!barbershopId || !userId) return false;
+
     const membership = await this.barbershopMemberRepo.findOne({
       where: {
         barbershop: { id: barbershopId },
@@ -74,7 +77,7 @@ export class BarbershopMemberService {
 
     return {
       message: 'Membro adicionado com sucesso',
-      membership: newMembership,
+      membership: toMemberResponse(newMembership),
     };
   }
 
@@ -198,7 +201,7 @@ export class BarbershopMemberService {
 
     return {
       message: 'Cargo atualizado com sucesso',
-      membership: targetMembership,
+      membership: toMemberResponse(targetMembership),
     };
   }
 
@@ -208,12 +211,15 @@ export class BarbershopMemberService {
       this.barbershopMemberRepo.find({
         where: { barbershop: { id: barbershopId } },
         relations: { user: true },
+        select: { user: { id: true } },
       }),
     ]);
 
-    const memberIds = new Set(currentMembers.map(m => m.user.id));
+    const memberIds = new Set(currentMembers.map(member => member.user?.id));
 
-    return candidates.filter(user => !memberIds.has(user.id));
+    return candidates
+      .filter(user => !memberIds.has(user.id))
+      .map(({ id, name }) => ({ id, name }));
   }
 
   async listBarbershopMembers(userId: string, barbershopId: string) {
@@ -230,7 +236,11 @@ export class BarbershopMemberService {
     const members = await this.barbershopMemberRepo.find({
       where: { barbershop: { id: barbershopId } },
       relations: { user: true },
+      select: { user: { id: true, name: true } },
     });
-    return { message: 'Membros encontrados com sucesso', members };
+    return {
+      message: 'Membros encontrados com sucesso',
+      members: members.map(toMemberResponse),
+    };
   }
 }

@@ -50,8 +50,11 @@ export class BarbershopController {
   }
 
   @Get(':id')
-  findOne(@Param('id') barberShopId: string) {
-    return this.barbershopService.findOne(barberShopId);
+  findOne(
+    @Param('id') barbershopId: string,
+    @CurrentUser('sub') userId: string,
+  ) {
+    return this.barbershopService.findOne(barbershopId, userId);
   }
 
   @Patch(':id')
