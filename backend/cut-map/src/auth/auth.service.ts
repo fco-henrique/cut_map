@@ -9,10 +9,11 @@ import {
 import type { ConfigType } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
 import { User } from 'src/user/entities/user.entity';
-import { IsNull, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtService } from '@nestjs/jwt';
+import { isUUID } from 'class-validator';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
 import { EmailService } from 'src/email/email.service';
@@ -30,9 +31,6 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
-    @InjectRepository(RefreshToken)
-    private readonly refreshRepo: Repository<RefreshToken>,
-
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
     private readonly hashingService: HashingService,
@@ -42,19 +40,36 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto) {
-    const user = await this.validateUser(dto.email, dto.password);
-
-    const accessToken = await this.generateAccessToken(user);
-    const refreshToken = await this.generateRefreshToken(user);
-
-    return { accessToken, refreshToken };
+    return this.withLockedUser(
+      { email: dto.email },
+      ['id', 'email', 'name', 'passwordHash', 'emailVerifiedAt'],
+      async (user, manager) => {
+        const authenticated = await this.validateUser(user, dto.password);
+        return this.issueSession(authenticated, manager);
+      },
+    );
   }
 
-  async validateUser(email: string, password: string) {
-    const user = await this.userRepo.findOne({
-      where: { email },
-      select: ['id', 'email', 'name', 'passwordHash', 'emailVerifiedAt'],
-    });
+  private withLockedUser<T>(
+    where: FindOptionsWhere<User>,
+    select: (keyof User)[],
+    operation: (user: User | null, manager: EntityManager) => Promise<T>,
+  ): Promise<T> {
+    // Lock the user before reading or writing session or recovery state.
+    return this.userRepo.manager.transaction(
+      'READ COMMITTED',
+      async manager => {
+        const user = await manager.getRepository(User).findOne({
+          where,
+          select,
+          lock: { mode: 'pessimistic_write' },
+        });
+        return operation(user, manager);
+      },
+    );
+  }
+
+  private async validateUser(user: User | null, password: string) {
     if (!user) throw new UnauthorizedException('Credenciais inválidas');
 
     const valid = await argon2.verify(user.passwordHash, password);
@@ -100,26 +115,36 @@ export class AuthService {
     });
   }
 
-  private async generateRefreshToken(user: User) {
+  private async issueSession(user: User, manager: EntityManager) {
+    const accessToken = await this.generateAccessToken(user);
     const tokenId = randomUUID();
 
-    const token = await this.jwtService.signAsync(
+    const refreshToken = await this.jwtService.signAsync(
       { sub: user.id, tokenId, type: 'refresh' },
       { expiresIn: '7d', secret: this.jwtConfiguration.refreshSecret },
     );
 
-    const hash = await argon2.hash(token);
+    const tokenHash = await argon2.hash(refreshToken);
+    const refreshRepo = manager.getRepository(RefreshToken);
+    await refreshRepo.save(
+      refreshRepo.create({
+        id: tokenId,
+        tokenHash,
+        user,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      }),
+    );
 
-    const entity = this.refreshRepo.create({
-      id: tokenId,
-      tokenHash: hash,
-      user,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
+    return { accessToken, refreshToken };
+  }
 
-    await this.refreshRepo.save(entity);
-
-    return token;
+  private revokeSessions(manager: EntityManager, userId: string, now: Date) {
+    return manager
+      .getRepository(RefreshToken)
+      .update(
+        { user: { id: userId }, revokedAt: IsNull() },
+        { revokedAt: now },
+      );
   }
 
   async refresh(token: string) {
@@ -136,78 +161,108 @@ export class AuthService {
       throw new UnauthorizedException('Token inválido para esta operação.');
     }
 
-    const storedToken = await this.refreshRepo.findOne({
-      where: { id: payload.tokenId },
-      relations: ['user'],
-    });
-
-    if (!storedToken) {
-      throw new UnauthorizedException('Token não encontrado ou já revogado.');
-    }
-
-    const match = await argon2.verify(storedToken.tokenHash, token);
-    if (!match) {
+    if (!isUUID(payload.sub) || !isUUID(payload.tokenId)) {
       throw new UnauthorizedException('Refresh token inválido.');
     }
 
-    if (storedToken.revokedAt) {
-      await this.refreshRepo.update(
-        { user: { id: storedToken.user.id }, revokedAt: IsNull() },
-        { revokedAt: new Date() },
-      );
+    const session = await this.withLockedUser(
+      { id: payload.sub },
+      ['id', 'email', 'name'],
+      async (user, manager) => {
+        if (payload.exp <= Math.floor(Date.now() / 1000)) {
+          throw new UnauthorizedException('Refresh token inválido.');
+        }
+
+        const notFound = 'Token não encontrado ou já revogado.';
+        if (!user) throw new UnauthorizedException(notFound);
+
+        const refreshRepo = manager.getRepository(RefreshToken);
+        const storedToken = await refreshRepo.findOne({
+          where: { id: payload.tokenId, user: { id: user.id } },
+        });
+        if (!storedToken) throw new UnauthorizedException(notFound);
+
+        const match = await argon2.verify(storedToken.tokenHash, token);
+        if (!match) {
+          throw new UnauthorizedException('Refresh token inválido.');
+        }
+
+        const now = new Date();
+        if (storedToken.revokedAt) {
+          await this.revokeSessions(manager, user.id, now);
+          // Commit the revocation before reporting reuse to the caller.
+          return null;
+        }
+
+        const { affected } = await refreshRepo.update(
+          { id: storedToken.id, revokedAt: IsNull() },
+          { revokedAt: now },
+        );
+        if (affected !== 1) {
+          throw new UnauthorizedException('Refresh token inválido.');
+        }
+
+        return this.issueSession(user, manager);
+      },
+    );
+    if (!session) {
       throw new UnauthorizedException(
         'Sessão comprometida detectada. Faça login novamente.',
       );
     }
-
-    const { affected } = await this.refreshRepo.update(
-      { id: storedToken.id, revokedAt: IsNull() },
-      { revokedAt: new Date() },
-    );
-
-    if (affected !== 1) {
-      throw new UnauthorizedException('Refresh token inválido.');
-    }
-
-    const accessToken = await this.generateAccessToken(storedToken.user);
-    const refreshToken = await this.generateRefreshToken(storedToken.user);
-
-    return { accessToken, refreshToken };
+    return session;
   }
 
   async logout(token: string) {
+    const message = 'Sessão encerrada.';
+    let payload: RefreshTokenPayload;
     try {
-      const payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(
-        token,
-        { secret: this.jwtConfiguration.refreshSecret },
-      );
-
-      if (payload.type === 'refresh') {
-        await this.refreshRepo.update(
-          { id: payload.tokenId },
-          { revokedAt: new Date() },
-        );
-      }
+      payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(token, {
+        secret: this.jwtConfiguration.refreshSecret,
+      });
     } catch {
-      /* empty */
+      return { message };
     }
 
-    return { message: 'Sessão encerrada.' };
+    if (
+      payload.type === 'refresh' &&
+      isUUID(payload.sub) &&
+      isUUID(payload.tokenId)
+    ) {
+      await this.withLockedUser(
+        { id: payload.sub },
+        ['id'],
+        async (user, manager) => {
+          if (user) {
+            await manager.getRepository(RefreshToken).update(
+              {
+                id: payload.tokenId,
+                user: { id: user.id },
+                revokedAt: IsNull(),
+              },
+              { revokedAt: new Date() },
+            );
+          }
+        },
+      );
+    }
+    return { message };
   }
 
   async logoutAll(userId: string) {
-    await this.refreshRepo.update(
-      { user: { id: userId }, revokedAt: IsNull() },
-      { revokedAt: new Date() },
-    );
+    await this.withLockedUser({ id: userId }, ['id'], async (user, manager) => {
+      if (user) {
+        await this.revokeSessions(manager, user.id, new Date());
+      }
+    });
 
     return { message: 'Todas as sessões foram encerradas.' };
   }
 
   async verifyEmail(email: string, code: string) {
-    const user = await this.userRepo.findOne({
-      where: { email },
-      select: [
+    return this.withLockedUser(
+      { email },
+      [
         'id',
         'name',
         'email',
@@ -215,37 +270,32 @@ export class AuthService {
         'emailVerificationCode',
         'emailVerificationExpires',
       ],
-    });
+      async (user, manager) => {
+        if (!user) throw new BadRequestException('Usuário não encontrado.');
+        if (user.emailVerifiedAt)
+          throw new BadRequestException('E-mail já verificado.');
+        if (!user.emailVerificationCode)
+          throw new BadRequestException('Nenhum código pendente.');
+        if (
+          user.emailVerificationExpires !== null &&
+          new Date() > user.emailVerificationExpires
+        ) {
+          throw new BadRequestException('Código expirado. Solicite um novo.');
+        }
+        if (user.emailVerificationCode !== code) {
+          throw new BadRequestException('Código inválido.');
+        }
 
-    if (!user) throw new BadRequestException('Usuário não encontrado.');
-    if (user.emailVerifiedAt)
-      throw new BadRequestException('E-mail já verificado.');
-    if (!user.emailVerificationCode)
-      throw new BadRequestException('Nenhum código pendente.');
-    if (
-      user.emailVerificationExpires !== null &&
-      new Date() > user.emailVerificationExpires
-    ) {
-      throw new BadRequestException('Código expirado. Solicite um novo.');
-    }
-    if (user.emailVerificationCode !== code) {
-      throw new BadRequestException('Código inválido.');
-    }
+        await manager.getRepository(User).update(user.id, {
+          emailVerifiedAt: new Date(),
+          emailVerificationCode: null,
+          emailVerificationExpires: null,
+        });
 
-    const accessToken = await this.generateAccessToken(user);
-    const refreshToken = await this.generateRefreshToken(user);
-
-    await this.userRepo.update(user.id, {
-      emailVerifiedAt: new Date(),
-      emailVerificationCode: null,
-      emailVerificationExpires: null,
-    });
-
-    return {
-      message: 'E-mail verificado com sucesso!',
-      accessToken,
-      refreshToken,
-    };
+        const session = await this.issueSession(user, manager);
+        return { message: 'E-mail verificado com sucesso!', ...session };
+      },
+    );
   }
 
   async resendVerificationCode(email: string) {
@@ -308,34 +358,36 @@ export class AuthService {
   }
 
   async verifyResetCode(email: string, code: string) {
-    const user = await this.userRepo.findOne({
-      where: { email },
-      select: ['id', 'email', 'resetPasswordCode', 'resetPasswordExpires'],
-    });
+    return this.withLockedUser(
+      { email },
+      ['id', 'email', 'resetPasswordCode', 'resetPasswordExpires'],
+      async (user, manager) => {
+        if (!user) throw new BadRequestException('Usuário não encontrado.');
+        if (!user.resetPasswordCode)
+          throw new BadRequestException('Nenhum código solicitado.');
+        if (
+          user.resetPasswordExpires &&
+          new Date() > user.resetPasswordExpires
+        ) {
+          throw new BadRequestException('Código expirado. Solicite novamente.');
+        }
+        if (user.resetPasswordCode !== code) {
+          throw new BadRequestException('Código inválido.');
+        }
 
-    if (!user) throw new BadRequestException('Usuário não encontrado.');
-    if (!user.resetPasswordCode)
-      throw new BadRequestException('Nenhum código solicitado.');
+        await manager.getRepository(User).update(user.id, {
+          resetPasswordCode: null,
+          resetPasswordExpires: null,
+        });
 
-    if (user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
-      throw new BadRequestException('Código expirado. Solicite novamente.');
-    }
-
-    if (user.resetPasswordCode !== code) {
-      throw new BadRequestException('Código inválido.');
-    }
-
-    await this.userRepo.update(user.id, {
-      resetPasswordCode: null,
-      resetPasswordExpires: null,
-    });
-
-    const resetToken = await this.generateResetToken(user);
-
-    return { resetToken };
+        const resetToken = await this.generateResetToken(user);
+        return { resetToken };
+      },
+    );
   }
 
   async resetPassword(resetToken: string, newPassword: string) {
+    const expired = 'Sessão expirada. Solicite um novo código.';
     let payload: ResetTokenPayload;
     try {
       payload = await this.jwtService.verifyAsync<ResetTokenPayload>(
@@ -343,48 +395,47 @@ export class AuthService {
         { secret: this.jwtConfiguration.resetSecret },
       );
     } catch {
-      throw new UnauthorizedException(
-        'Sessão expirada. Solicite um novo código.',
-      );
+      throw new UnauthorizedException(expired);
     }
 
     if (payload.type !== 'password_reset') {
       throw new UnauthorizedException('Token inválido para esta operação.');
     }
 
-    const user = await this.userRepo.findOne({
-      where: { id: payload.sub },
-      select: ['id', 'passwordChangedAt'],
-    });
-
-    if (!user) {
-      throw new UnauthorizedException(
-        'Sessão expirada. Solicite um novo código.',
-      );
+    if (!isUUID(payload.sub) || !Number.isSafeInteger(payload.iat)) {
+      throw new UnauthorizedException(expired);
     }
 
-    if (
-      user.passwordChangedAt &&
-      payload.iat * 1000 <= user.passwordChangedAt.getTime()
-    ) {
-      throw new UnauthorizedException(
-        'Este link já foi usado. Solicite um novo código.',
-      );
-    }
+    return this.withLockedUser(
+      { id: payload.sub },
+      ['id', 'passwordChangedAt'],
+      async (user, manager) => {
+        if (!user || payload.exp <= Math.floor(Date.now() / 1000)) {
+          throw new UnauthorizedException(expired);
+        }
 
-    const passwordHash = await this.hashingService.hash(newPassword);
-    const now = new Date();
+        const issuedAt = payload.iat * 1000;
+        if (
+          user.passwordChangedAt &&
+          issuedAt <= user.passwordChangedAt.getTime()
+        ) {
+          throw new UnauthorizedException(
+            'Este link já foi usado. Solicite um novo código.',
+          );
+        }
 
-    await this.userRepo.update(user.id, {
-      passwordHash,
-      passwordChangedAt: now,
-    });
+        const passwordHash = await this.hashingService.hash(newPassword);
+        const now = new Date();
+        // Include the issue time even if another server's clock is ahead.
+        const passwordChangedAt = new Date(Math.max(now.getTime(), issuedAt));
+        await manager.getRepository(User).update(user.id, {
+          passwordHash,
+          passwordChangedAt,
+        });
+        await this.revokeSessions(manager, user.id, now);
 
-    await this.refreshRepo.update(
-      { user: { id: user.id }, revokedAt: IsNull() },
-      { revokedAt: now },
+        return { message: 'Senha alterada com sucesso!' };
+      },
     );
-
-    return { message: 'Senha alterada com sucesso!' };
   }
 }

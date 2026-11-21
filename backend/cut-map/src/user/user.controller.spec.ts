@@ -9,6 +9,7 @@ import { AuthenticatedUser } from 'src/auth/interfaces/jwt-payload.interface';
 describe('UserController', () => {
   let controller: UserController;
   let userService: {
+    findAll: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     remove: jest.Mock;
@@ -16,6 +17,7 @@ describe('UserController', () => {
 
   beforeEach(async () => {
     userService = {
+      findAll: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
@@ -49,6 +51,15 @@ describe('UserController', () => {
       const result = controller.getMe(authenticatedUser);
 
       expect(result).toEqual(authenticatedUser);
+    });
+  });
+
+  describe('findAll', () => {
+    it('delega a consulta somente com o identificador autenticado', async () => {
+      userService.findAll.mockResolvedValue([]);
+
+      await expect(controller.findAll('user-id')).resolves.toEqual([]);
+      expect(userService.findAll).toHaveBeenCalledWith('user-id');
     });
   });
 

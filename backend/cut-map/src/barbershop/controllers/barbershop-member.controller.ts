@@ -81,7 +81,7 @@ export class BarbershopMemberController {
   @Roles(BarbershopRole.OWNER, BarbershopRole.MANAGER)
   changeRole(
     @CurrentUser('sub') adminId: string,
-    @Param('id') barbershopId: string,
+    @Param('barbershopId') barbershopId: string,
     @Param('userId') userId: string,
     @Body() dto: UpdateMemberRoleDto,
   ) {

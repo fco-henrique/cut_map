@@ -11,6 +11,7 @@ export interface RefreshTokenPayload {
   sub: string;
   tokenId: string;
   type: 'refresh';
+  exp: number;
 }
 
 export interface ResetTokenPayload {
@@ -18,6 +19,7 @@ export interface ResetTokenPayload {
   email: string;
   type: 'password_reset';
   iat: number;
+  exp: number;
 }
 
 export interface AuthenticatedUser {

@@ -24,8 +24,8 @@ export class UserController {
   }
 
   @Get()
-  findAll() {
-    return this.userService.findAll();
+  findAll(@CurrentUser('sub') currentUserId: string) {
+    return this.userService.findAll(currentUserId);
   }
 
   @Public()

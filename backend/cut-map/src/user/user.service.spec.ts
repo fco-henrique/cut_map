@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -213,7 +214,7 @@ describe('UserService', () => {
   });
 
   describe('findAll', () => {
-    it('deve retornar todos os usuários', async () => {
+    it('retorna somente os dados permitidos do titular consultado', async () => {
       const users = [
         user,
         {
@@ -224,12 +225,37 @@ describe('UserService', () => {
         } as User,
       ];
 
-      userRepo.find.mockResolvedValue(users);
+      userRepo.find.mockImplementation(options =>
+        Promise.resolve(
+          users.filter(
+            candidate => candidate.id === (options?.where as User).id,
+          ),
+        ),
+      );
 
-      const result = await service.findAll();
+      await expect(service.findAll(user.id)).resolves.toEqual([
+        { id: user.id, name: user.name, email: user.email },
+      ]);
+      expect(userRepo.find).toHaveBeenCalledWith({
+        where: { id: user.id },
+        select: { id: true, name: true, email: true },
+      });
+      await expect(service.findAll('user-id-2')).resolves.toEqual([
+        { id: 'user-id-2', name: 'João', email: 'joao@example.com' },
+      ]);
+    });
 
-      expect(userRepo.find).toHaveBeenCalledWith();
-      expect(result).toEqual(users);
+    it('retorna lista vazia quando o titular não tem registro', async () => {
+      userRepo.find.mockResolvedValue([]);
+
+      await expect(service.findAll('missing-user-id')).resolves.toEqual([]);
+    });
+
+    it('rejeita uma consulta sem identificador do titular', async () => {
+      await expect(service.findAll('')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+      expect(userRepo.find).not.toHaveBeenCalled();
     });
   });
 
