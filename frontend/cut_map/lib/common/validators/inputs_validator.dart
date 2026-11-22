@@ -5,7 +5,7 @@ class InputsValidator {
   InputsValidator._();
 
   static final RegExp _strongPasswordRegex = RegExp(
-    r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^\p{L}\p{N}\s]).{8,}$',
+    r'^(?=.{8,}$)(?=.*\p{Ll})(?=.*\p{Lu})(?=.*\d)(?=.*[^\p{L}\p{N}\s])',
     unicode: true,
   );
 

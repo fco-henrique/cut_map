@@ -14,19 +14,26 @@ void main() {
 
     test('rejeita senha sem maiúscula, minúscula, número ou especial', () {
       expect(validator('abcdef1!'), isNotNull); // sem maiúscula
+      expect(validator('ábcdef1!'), isNotNull); // minúscula Unicode sem maiúscula
       expect(validator('ABCDEF1!'), isNotNull); // sem minúscula
+      expect(validator('ÁBCDEF1!'), isNotNull); // maiúscula Unicode sem minúscula
       expect(validator('Abcdefg!'), isNotNull); // sem número
       expect(validator('Abcdef12'), isNotNull); // sem especial
+      expect(validator('Ação1234'), isNotNull); // acentuadas sem especial
       expect(validator('Abcdef1 '), isNotNull); // espaço não é especial
+      expect(validator('Áa1!xxx'), isNotNull); // Unicode abaixo de 8 caracteres
     });
 
-    test('aceita senha forte com qualquer caractere especial não alfanumérico', () {
+    test('aceita senha forte com qualquer caractere especial não alfanumérico e letras Unicode', () {
       expect(validator('Abcd123!'), isNull);
       expect(validator('Abcd123#'), isNull);
       expect(validator('Abcd123_'), isNull);
       expect(validator('Abcd123-'), isNull);
       expect(validator('Senha@2026'), isNull);
       expect(validator('Str0ng.Pass+1'), isNull);
+      expect(validator('Áa1!xxxx'), isNull);
+      expect(validator('áA1!xxxx'), isNull);
+      expect(validator('Ação-Segura7'), isNull);
     });
   });
 
