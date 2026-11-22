@@ -10,31 +10,39 @@ class ApiErrorHandler {
         return 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
       }
 
-      String errorMessage = fallbackMessage ?? 'Ocorreu um erro de comunicação com o servidor.';
+      String errorMessage =
+          fallbackMessage ?? 'Ocorreu um erro de comunicação com o servidor.';
 
       if (e.response?.data != null) {
-        var responseData = e.response!.data;
+        final responseData = e.response!.data;
 
         if (responseData is Map) {
           if (responseData.containsKey('message')) {
-            var messageData = responseData['message'];
+            final messageData = responseData['message'];
 
             if (messageData is List && messageData.isNotEmpty) {
-              errorMessage = messageData.first.toString();
-            } else {
+              final messages = messageData
+                  .map((item) => item.toString().trim())
+                  .where((item) => item.isNotEmpty)
+                  .toList();
+              if (messages.isNotEmpty) {
+                errorMessage = messages.join('\n');
+              }
+            } else if (messageData != null &&
+                messageData.toString().trim().isNotEmpty) {
               errorMessage = messageData.toString();
             }
           } else if (responseData.containsKey('detail')) {
             errorMessage = responseData['detail'].toString();
           }
-        } else if (responseData is String) {
+        } else if (responseData is String && responseData.trim().isNotEmpty) {
           errorMessage = responseData;
         }
       }
 
       return errorMessage;
-    } 
-    
+    }
+
     return 'Ocorreu um erro inesperado: ${e.toString()}';
   }
 }

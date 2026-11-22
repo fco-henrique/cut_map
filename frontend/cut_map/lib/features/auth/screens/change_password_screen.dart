@@ -14,8 +14,13 @@ import 'package:go_router/go_router.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final String resetToken;
+  final ChangePasswordScreenController? controller;
 
-  const ChangePasswordScreen({super.key, required this.resetToken});
+  const ChangePasswordScreen({
+    super.key,
+    required this.resetToken,
+    this.controller,
+  });
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -25,7 +30,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  final _controller = locator.get<ChangePasswordScreenController>();
+  late final ChangePasswordScreenController _controller;
+  late final bool _ownsController;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -53,12 +59,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   void initState() {
     super.initState();
+    _ownsController = widget.controller == null;
+    _controller =
+        widget.controller ?? locator.get<ChangePasswordScreenController>();
     _controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
+    if (_ownsController) {
+      _controller.dispose();
+    }
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -66,6 +78,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (Sizes().width == 0 || Sizes().height == 0) {
+      Sizes.init(context);
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(

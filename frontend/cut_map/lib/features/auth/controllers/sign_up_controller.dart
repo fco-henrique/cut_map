@@ -26,9 +26,9 @@ class SignUpScreenController extends ChangeNotifier {
     _changeState(SignUpScreenLoadingState());
     try {
       await _authService.signUp(
-        name: name,
-        email: email,
-        password: password.trim(),
+        name: name.trim(),
+        email: email.trim(),
+        password: password,
       );
 
       log("Usuário criado com sucesso via API com Dio");

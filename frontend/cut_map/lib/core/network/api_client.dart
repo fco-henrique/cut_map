@@ -23,12 +23,14 @@ class ApiClient {
 
   final Dio dio;
   final TokenStorage storage;
-  final Dio _refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
+  final Dio _refreshDio;
+  final Future<void> Function()? _onSessionExpired;
   Future<String>? _pendingRefresh;
 
   Future<String> _refreshAccessToken(String refreshToken) async {
     final response = await _refreshDio.post(
-      '/auth/refresh', data: {'refreshToken': refreshToken},
+      '/auth/refresh',
+      data: {'refreshToken': refreshToken},
     );
     final accessToken = response.data['accessToken'];
     final nextRefreshToken = response.data['refreshToken'];
@@ -39,10 +41,38 @@ class ApiClient {
     return accessToken;
   }
 
-  ApiClient({required this.storage}) : dio = Dio() {
-    dio.options = BaseOptions(baseUrl: baseUrl);
+  /// Renova o par de tokens usando o [refreshToken] atual, compartilhando
+  /// eventual requisição de refresh em andamento.
+  Future<String> refreshSession(String refreshToken) async {
+    try {
+      final pending = _pendingRefresh ??= _refreshAccessToken(refreshToken);
+      return await pending;
+    } finally {
+      _pendingRefresh = null;
+    }
+  }
 
-    dio.interceptors.add(
+  Future<void> _notifySessionExpired() async {
+    if (_onSessionExpired != null) {
+      await _onSessionExpired();
+      return;
+    }
+    if (locator.isRegistered<AuthManager>()) {
+      await locator<AuthManager>().logout();
+    }
+  }
+
+  ApiClient({
+    required this.storage,
+    Dio? dio,
+    Dio? refreshDio,
+    Future<void> Function()? onSessionExpired,
+  }) : dio = dio ?? Dio(),
+       _refreshDio = refreshDio ?? Dio(BaseOptions(baseUrl: baseUrl)),
+       _onSessionExpired = onSessionExpired {
+    this.dio.options = BaseOptions(baseUrl: baseUrl);
+
+    this.dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           if (!_publicAuthPaths.contains(options.path) &&
@@ -64,18 +94,20 @@ class ApiClient {
           final requestToken = e.requestOptions.headers['Authorization'];
           final accessToken = await storage.readAccessToken();
           final refreshToken = await storage.readRefreshToken();
-          if (requestToken is! String ||
-              accessToken == null || accessToken.isEmpty ||
-              refreshToken == null || refreshToken.isEmpty) {
+          if (refreshToken == null || refreshToken.isEmpty) {
             return handler.next(e);
           }
 
           // Outra chamada pode já ter renovado o token desta requisição.
-          if (requestToken != 'Bearer $accessToken' && _pendingRefresh == null) {
+          if (accessToken != null &&
+              accessToken.isNotEmpty &&
+              requestToken is String &&
+              requestToken != 'Bearer $accessToken' &&
+              _pendingRefresh == null) {
             e.requestOptions.extra['retriedAfterRefresh'] = true;
             e.requestOptions.headers['Authorization'] = 'Bearer $accessToken';
             try {
-              return handler.resolve(await dio.fetch(e.requestOptions));
+              return handler.resolve(await this.dio.fetch(e.requestOptions));
             } on DioException catch (retryError) {
               return handler.next(retryError);
             }
@@ -83,19 +115,16 @@ class ApiClient {
 
           String newAccessToken;
           try {
-            final pending = _pendingRefresh ??= _refreshAccessToken(refreshToken);
-            newAccessToken = await pending;
+            newAccessToken = await refreshSession(refreshToken);
           } catch (_) {
-            await locator<AuthManager>().logout();
+            await _notifySessionExpired();
             return handler.next(e);
-          } finally {
-            _pendingRefresh = null;
           }
 
           e.requestOptions.extra['retriedAfterRefresh'] = true;
           e.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
           try {
-            return handler.resolve(await dio.fetch(e.requestOptions));
+            return handler.resolve(await this.dio.fetch(e.requestOptions));
           } on DioException catch (retryError) {
             return handler.next(retryError);
           }

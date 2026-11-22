@@ -19,11 +19,13 @@ import 'package:go_router/go_router.dart';
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
   final VerificationContext context;
+  final VerifyEmailScreenController? controller;
 
   const VerifyEmailScreen({
     super.key,
     required this.email,
     required this.context,
+    this.controller,
   });
 
   @override
@@ -33,7 +35,8 @@ class VerifyEmailScreen extends StatefulWidget {
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final _codigController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final _controller = locator.get<VerifyEmailScreenController>();
+  late final VerifyEmailScreenController _controller;
+  late final bool _ownsController;
 
   Timer? _timer;
   int _start = 60;
@@ -91,6 +94,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
+    _ownsController = widget.controller == null;
+    _controller =
+        widget.controller ?? locator.get<VerifyEmailScreenController>();
     startTimer();
     _controller.addListener(_onControllerChanged);
   }
@@ -99,12 +105,18 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   void dispose() {
     _timer?.cancel();
     _controller.removeListener(_onControllerChanged);
+    if (_ownsController) {
+      _controller.dispose();
+    }
     _codigController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (Sizes().width == 0 || Sizes().height == 0) {
+      Sizes.init(context);
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -141,11 +153,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     ),
                   ),
                   SizedBox(width: 20.w),
-                  Text(
-                    widget.context == VerificationContext.signUp
-                        ? "Validar E-mail"
-                        : "Validar E-mail para recuperação",
-                    style: AppFonts.semiBold20.apply(color: AppColors.white),
+                  Expanded(
+                    child: Text(
+                      widget.context == VerificationContext.signUp
+                          ? "Validar E-mail"
+                          : "Validar E-mail para recuperação",
+                      style: AppFonts.semiBold20.apply(color: AppColors.white),
+                    ),
                   ),
                 ],
               ),

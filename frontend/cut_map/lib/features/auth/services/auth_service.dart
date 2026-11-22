@@ -22,6 +22,15 @@ class EmailNotVerifiedException implements Exception {
   String toString() => message;
 }
 
+class AuthSessionInvalidException implements Exception {
+  final String message;
+
+  const AuthSessionInvalidException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class AuthService with ChangeNotifier {
   final ApiClient api;
 
@@ -149,10 +158,32 @@ class AuthService with ChangeNotifier {
     }
   }
 
+  Future<String> refreshSession(String refreshToken) async {
+    try {
+      return await api.refreshSession(refreshToken);
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 401 || statusCode == 403) {
+        throw AuthSessionInvalidException(ApiErrorHandler.handleError(e));
+      }
+      throw ApiErrorHandler.handleError(e);
+    } on StateError catch (e) {
+      throw AuthSessionInvalidException(e.message);
+    } catch (e) {
+      throw ApiErrorHandler.handleError(e);
+    }
+  }
+
   Future<UserModel> getCurrentUser() async {
     try {
       final response = await api.dio.get('/user/me');
       return UserModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 401 || statusCode == 403) {
+        throw AuthSessionInvalidException(ApiErrorHandler.handleError(e));
+      }
+      throw ApiErrorHandler.handleError(e);
     } catch (e) {
       throw ApiErrorHandler.handleError(e);
     }
@@ -168,6 +199,22 @@ class AuthService with ChangeNotifier {
         data: {'newPassword': newPassword},
         options: Options(headers: {'Authorization': 'Bearer $resetToken'}),
       );
+    } catch (e) {
+      throw ApiErrorHandler.handleError(e);
+    }
+  }
+
+  Future<UserModel> updatePassword({
+    required String userId,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await api.dio.patch(
+        '/user/$userId',
+        data: {'currentPassword': currentPassword, 'password': newPassword},
+      );
+      return UserModel.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       throw ApiErrorHandler.handleError(e);
     }

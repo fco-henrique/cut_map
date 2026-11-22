@@ -3,7 +3,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class TokenStorage {
   static const _keyAccess = 'access_token';
   static const _keyRefresh = 'refresh_token';
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage;
+
+  const TokenStorage({FlutterSecureStorage? storage})
+    : _storage = storage ?? const FlutterSecureStorage();
 
   Future<void> saveTokens(String accessToken, String refreshToken) async {
     await _storage.write(key: _keyAccess, value: accessToken);

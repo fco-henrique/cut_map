@@ -16,7 +16,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final SignUpScreenController? controller;
+
+  const SignUpScreen({super.key, this.controller});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -30,39 +32,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
-  final _controller = locator.get<SignUpScreenController>();
+  late final SignUpScreenController _controller;
+  late final bool _ownsController;
+
+  void _onControllerChanged() {
+    if (!mounted) return;
+    final state = _controller.state;
+
+    if (state is SignUpScreenSuccessState) {
+      context.push(
+        NamedRoutes.emailVerify,
+        extra: VerificationRouteData(
+          email: _emailController.text.trim(),
+          context: VerificationContext.signUp,
+        ),
+      );
+    } else if (state is SignUpScreenErrorState) {
+      CustomSnackbar.show(
+        context,
+        title: state.isServerDown
+            ? 'Servidor Indisponível'
+            : 'Falha no Cadastro',
+        message: state.message,
+        type: state.isServerDown
+            ? SnackbarType.unavailable
+            : SnackbarType.error,
+      );
+    }
+  }
 
   @override
   void initState() {
-    _controller.addListener(() {
-      final state = _controller.state;
-
-      if (state is SignUpScreenSuccessState) {
-        context.push(
-          NamedRoutes.emailVerify,
-          extra: VerificationRouteData(
-            email: _emailController.text.trim(),
-            context: VerificationContext.signUp,
-          ),
-        );
-      } else if (state is SignUpScreenErrorState) {
-        CustomSnackbar.show(
-          context,
-          title: state.isServerDown
-              ? 'Servidor Indisponível'
-              : 'Falha no Cadastro',
-          message: state.message,
-          type: state.isServerDown
-              ? SnackbarType.unavailable
-              : SnackbarType.error,
-        );
-      }
-    });
     super.initState();
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? locator.get<SignUpScreenController>();
+    _controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    if (_ownsController) {
+      _controller.dispose();
+    }
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -72,6 +84,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (Sizes().width == 0 || Sizes().height == 0) {
+      Sizes.init(context);
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -153,37 +168,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             ),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Ao criar sua conta, você concorda com nossos ",
-                  style: AppFonts.regular12.apply(color: AppColors.gray),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    Text(
+                      "Ao criar sua conta, você concorda com nossos ",
+                      style: AppFonts.regular12.apply(color: AppColors.gray),
+                    ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Text(
+                        "Termos de Uso",
+                        style: AppFonts.bold12.apply(color: AppColors.yellow),
+                      ),
+                    ),
+                  ],
                 ),
-                GestureDetector(
-                  onTap: () {},
-                  child: Text(
-                    "Termos de Uso",
-                    style: AppFonts.bold12.apply(color: AppColors.yellow),
-                  ),
-                ),
-              ],
+              ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "e ",
-                  style: AppFonts.regular12.apply(color: AppColors.gray),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    Text(
+                      "e ",
+                      style: AppFonts.regular12.apply(color: AppColors.gray),
+                    ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Text(
+                        "Política de Privacidade  ",
+                        style: AppFonts.bold12.apply(color: AppColors.yellow),
+                      ),
+                    ),
+                  ],
                 ),
-                GestureDetector(
-                  onTap: () {},
-                  child: Text(
-                    "Política de Privacidade  ",
-                    style: AppFonts.bold12.apply(color: AppColors.yellow),
-                  ),
-                ),
-              ],
+              ),
             ),
 
             SizedBox(height: 55.h),
@@ -202,8 +227,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       if (valid) {
                         log("prosseguindo com a criação da conta");
                         _controller.signUp(
-                          name: _nameController.text,
-                          email: _emailController.text,
+                          name: _nameController.text.trim(),
+                          email: _emailController.text.trim(),
                           password: _passwordController.text,
                         );
                       }

@@ -7,6 +7,7 @@ import 'package:cut_map/common/widgets/custom_barber_card.dart';
 import 'package:cut_map/common/widgets/custom_compact_barber_card.dart';
 import 'package:cut_map/common/widgets/custom_map_preview.dart';
 import 'package:cut_map/common/widgets/custom_notification_button.dart';
+import 'package:cut_map/common/widgets/custom_snackbar.dart';
 import 'package:cut_map/common/widgets/custom_text_form_field.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
 import 'package:cut_map/features/home/controllers/home_controller.dart';
@@ -113,9 +114,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         spacing: 12,
                         children: [
                           CustomNotificationButton(
-                            onTap: () async {
-                              final authManager = locator.get<AuthManager>();
-                              await authManager.logout();
+                            onTap: () {
+                              CustomSnackbar.show(
+                                context,
+                                title: 'Notificações',
+                                message: 'Nenhuma notificação nova no momento.',
+                                type: SnackbarType.notification,
+                              );
                             },
                             notificationCount: 2,
                           ),
@@ -229,9 +234,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Próximas a você",
-                        style: AppFonts.bold18.apply(color: AppColors.white),
+                      Expanded(
+                        child: Text(
+                          "Próximas a você",
+                          style: AppFonts.bold18.apply(color: AppColors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       InkWell(
                         onTap: widget.onExplore,
@@ -334,9 +342,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Mais bem avaliadas",
-                        style: AppFonts.bold18.apply(color: AppColors.white),
+                      Expanded(
+                        child: Text(
+                          "Mais bem avaliadas",
+                          style: AppFonts.bold18.apply(color: AppColors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       InkWell(
                         onTap: widget.onExplore,
