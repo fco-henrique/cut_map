@@ -156,6 +156,48 @@ void main() {
       expect(storage.refreshToken, isNull);
     });
 
+    test('preserva refreshToken em falha transitória durante refresh inicial', () async {
+      final storage = InMemoryTokenStorage(refreshToken: 'valid-refresh');
+      final authService = FakeAuthService()
+        ..onRefreshSession = (_) async =>
+            throw 'Servidor demorou a responder ou está offline. Verifique sua conexão.';
+
+      final manager = AuthManager(
+        storage: storage,
+        authService: authService,
+        autoInitialize: false,
+      );
+
+      await manager.initialize();
+
+      expect(manager.isInitialized, isTrue);
+      expect(manager.isLoggedIn, isFalse);
+      expect(manager.user, isNull);
+      expect(storage.deleteCalled, isFalse);
+      expect(storage.refreshToken, 'valid-refresh');
+    });
+
+    test('revoga tokens locais quando refresh inicial confirma sessão inválida', () async {
+      final storage = InMemoryTokenStorage(refreshToken: 'revoked-refresh');
+      final authService = FakeAuthService()
+        ..onRefreshSession = (_) async =>
+            throw const AuthSessionInvalidException('Refresh token inválido.');
+
+      final manager = AuthManager(
+        storage: storage,
+        authService: authService,
+        autoInitialize: false,
+      );
+
+      await manager.initialize();
+
+      expect(manager.isInitialized, isTrue);
+      expect(manager.isLoggedIn, isFalse);
+      expect(manager.user, isNull);
+      expect(storage.deleteCalled, isTrue);
+      expect(storage.refreshToken, isNull);
+    });
+
     test('não declara sessão válida quando API falha na verificação inicial', () async {
       final storage = InMemoryTokenStorage(
         accessToken: 'stale-access',
@@ -175,6 +217,8 @@ void main() {
       expect(manager.isInitialized, isTrue);
       expect(manager.isLoggedIn, isFalse);
       expect(manager.user, isNull);
+      expect(storage.deleteCalled, isFalse);
+      expect(storage.refreshToken, 'stale-refresh');
     });
   });
 

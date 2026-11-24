@@ -131,7 +131,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(OnboardingScreen), findsOneWidget);
-      expect(find.text('Encontre barbearias próximas'), findsOneWidget);
+      expect(find.text('Barbearias perto de você'), findsOneWidget);
+      expect(
+        find.text(
+          'Encontre os melhores lugares com base na sua localização, avaliação e distância.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('cut_map'), findsOneWidget);
+      expect(
+        tester.getTopRight(find.text('Pular')).dx,
+        greaterThan(215),
+      );
 
       await tester.tap(find.text('Pular'));
       await tester.pumpAndSettle();
@@ -147,7 +158,7 @@ void main() {
       expect(find.text('Junte-se a comunidade cut_map'), findsOneWidget);
     });
 
-    testWidgets('avança pelas três etapas até Começar e vai ao login', (
+    testWidgets('avança pelas três etapas até Começar 🚀 e vai ao login', (
       tester,
     ) async {
       usePhoneViewport(tester);
@@ -171,23 +182,123 @@ void main() {
       await tester.pumpWidget(App(router: router));
       await tester.pumpAndSettle();
 
-      expect(find.text('Encontre barbearias próximas'), findsOneWidget);
-      await tester.tap(find.text('Próximo'));
+      expect(find.text('Barbearias perto de você'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Barbearias perto de você')).dx,
+        lessThan(40),
+      );
+      expect(
+        tester.getTopRight(find.text('Próximo →')).dx,
+        greaterThan(250),
+      );
+
+      await tester.tap(find.text('Próximo →'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Agendamento sem complicação'), findsOneWidget);
-      await tester.tap(find.text('Próximo'));
+      expect(find.text('Agende em poucos passos'), findsOneWidget);
+      expect(
+        find.text(
+          'Escolha o barbeiro, o serviço e o horário ideal. Tudo sem sair do app.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Próximo →'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Avaliações reais de clientes'), findsOneWidget);
-      expect(find.text('Começar'), findsOneWidget);
+      expect(find.text('Avalie e compartilhe'), findsOneWidget);
+      expect(
+        find.text(
+          'Deixe sua opinião, favorite as melhores e ajude outros usuários a encontrar o corte perfeito.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Começar 🚀'), findsOneWidget);
 
-      await tester.tap(find.text('Começar'));
+      await tester.tap(find.text('Começar 🚀'));
       await tester.pumpAndSettle();
 
       expect(onboardingManager.hasSeenOnboarding, isTrue);
       expect(find.text('Bem-vindo de volta!'), findsOneWidget);
     });
+
+    testWidgets(
+      'não sofre overflow no rodapé ao redimensionar para 390x844 e em viewport 320x568',
+      (tester) async {
+        Future<void> verifyViewport(Size size, {Size? initialSize}) async {
+          tester.view.devicePixelRatio = 1.0;
+          tester.view.physicalSize = initialSize ?? size;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          final authManager = AuthManager(
+            storage: InMemoryTokenStorage(),
+            authService: FakeAuthService(),
+            autoInitialize: false,
+          );
+          await authManager.initialize();
+          registerRouterTestDependencies(authManager);
+
+          final onboardingStorage = InMemoryOnboardingStorage(seen: false);
+          final onboardingManager = OnboardingManager(
+            storage: onboardingStorage,
+            autoInitialize: false,
+          );
+          await onboardingManager.initialize();
+
+          final router = createAppRouter(authManager, onboardingManager);
+          await tester.pumpWidget(App(router: router));
+          await tester.pumpAndSettle();
+
+          if (initialSize != null) {
+            tester.view.physicalSize = size;
+            await tester.pumpAndSettle();
+          }
+
+          expect(tester.takeException(), isNull);
+          final nextButton = find.widgetWithText(ElevatedButton, 'Próximo →');
+          expect(nextButton, findsOneWidget);
+          expect(
+            tester.getTopRight(nextButton).dx,
+            lessThanOrEqualTo(size.width),
+          );
+
+          await tester.tap(nextButton);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.text('Agende em poucos passos'), findsOneWidget);
+
+          await tester.tap(find.widgetWithText(ElevatedButton, 'Próximo →'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.text('Avalie e compartilhe'), findsOneWidget);
+
+          final startButton = find.widgetWithText(ElevatedButton, 'Começar 🚀');
+          expect(startButton, findsOneWidget);
+          expect(
+            tester.getTopRight(startButton).dx,
+            lessThanOrEqualTo(size.width),
+          );
+
+          await tester.tap(startButton);
+          await tester.pumpAndSettle();
+          expect(onboardingManager.hasSeenOnboarding, isTrue);
+          expect(find.text('Bem-vindo de volta!'), findsOneWidget);
+        }
+
+        // Simula carregamento inicial em tela desktop seguido de resize para 390x844
+        await verifyViewport(
+          const Size(390, 844),
+          initialSize: const Size(1024, 900),
+        );
+
+        await locator.reset();
+
+        // Verifica viewport compacta 320x568 em todas as 3 etapas
+        await verifyViewport(const Size(320, 568));
+      },
+    );
   });
 
   group('Proteção de rotas e redirecionamentos (#8, #9, #12)', () {

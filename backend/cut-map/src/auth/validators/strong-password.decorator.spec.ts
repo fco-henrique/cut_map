@@ -81,6 +81,44 @@ describe('política de senha forte', () => {
     });
   });
 
+  describe.each([
+    [
+      'CreateUserDto (cadastro)',
+      (password: unknown) =>
+        errorsFor(CreateUserDto, { ...base, password }, 'password'),
+    ],
+    [
+      'ResetPasswordDto (recuperação)',
+      (password: unknown) =>
+        errorsFor(ResetPasswordDto, { newPassword: password }, 'newPassword'),
+    ],
+    [
+      'UpdateUserDto (alteração)',
+      (password: unknown) =>
+        errorsFor(
+          UpdateUserDto,
+          { password, currentPassword: 'Atual123!' },
+          'password',
+        ),
+    ],
+  ])('%s: espaços nas pontas contam e não são removidos', (_label, check) => {
+    it('aceita senha forte que só atinge 8 caracteres contando o espaço', async () => {
+      // Sem espaço: 'Abc123!' tem 7 caracteres, então só é válida se o
+      // espaço não for removido antes da validação.
+      expect(await check(' Abc123!')).toBeUndefined();
+      expect(await check('Abc123! ')).toBeUndefined();
+      expect(await check('Abc 123!')).toBeUndefined();
+    });
+
+    it('continua rejeitando senha sem a política mesmo com espaços', async () => {
+      for (const password of [' Abc123 ', '  abc123!  ', ' ABC123! ']) {
+        const constraints = await check(password);
+        expect(constraints).toBeDefined();
+        expect(Object.values(constraints!)).toContain(STRONG_PASSWORD_MESSAGE);
+      }
+    });
+  });
+
   it('emite a mensagem de senha fraca apenas uma vez por violação', async () => {
     const constraints = await errorsFor(
       CreateUserDto,

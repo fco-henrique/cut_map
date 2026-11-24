@@ -162,13 +162,12 @@ class AuthService with ChangeNotifier {
     try {
       return await api.refreshSession(refreshToken);
     } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      if (statusCode == 401 || statusCode == 403) {
+      if (ApiClient.isInvalidRefreshTokenError(e)) {
         throw AuthSessionInvalidException(ApiErrorHandler.handleError(e));
       }
       throw ApiErrorHandler.handleError(e);
     } on StateError catch (e) {
-      throw AuthSessionInvalidException(e.message);
+      throw e.message;
     } catch (e) {
       throw ApiErrorHandler.handleError(e);
     }

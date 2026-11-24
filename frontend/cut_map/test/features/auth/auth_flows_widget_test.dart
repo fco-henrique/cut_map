@@ -344,6 +344,41 @@ void main() {
       expect(authManager.isLoggedIn, isTrue);
       expect(find.text('Próximo agendamento'), findsOneWidget);
     });
+
+    testWidgets('preserva espaços nas pontas da senha ao autenticar', (
+      tester,
+    ) async {
+      usePhoneViewport(tester);
+      await setupDeps();
+      final router = createAppRouter(authManager, onboardingManager);
+
+      String? capturedEmail;
+      String? capturedPassword;
+      authService.onSignIn = (email, password) async {
+        capturedEmail = email;
+        capturedPassword = password;
+        return {
+          'accessToken': 'valid-access',
+          'refreshToken': 'valid-refresh',
+        };
+      };
+
+      await tester.pumpWidget(App(router: router));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SignInScreen), findsOneWidget);
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), '  ana@cutmap.dev  ');
+      await tester.enterText(fields.at(1), '  Senha#2026  ');
+
+      await tester.ensureVisible(find.text('Entrar'));
+      await tester.tap(find.text('Entrar'));
+      await tester.pumpAndSettle();
+
+      expect(capturedEmail, 'ana@cutmap.dev');
+      expect(capturedPassword, '  Senha#2026  ');
+      expect(authManager.isLoggedIn, isTrue);
+    });
   });
 
   group('Logout na interface (#9)', () {

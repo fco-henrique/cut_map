@@ -166,7 +166,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       if (valid) {
                         _controller.signIn(
                           _emailController.text.trim(),
-                          _passwordController.text.trim(),
+                          _passwordController.text,
                         );
                       }
                     },

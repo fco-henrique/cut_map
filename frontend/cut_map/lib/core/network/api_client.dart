@@ -27,14 +27,41 @@ class ApiClient {
   final Future<void> Function()? _onSessionExpired;
   Future<String>? _pendingRefresh;
 
+  /// Retorna `true` apenas quando o servidor rejeita explicitamente o refresh
+  /// token (HTTP 401/403), distinguindo-o de falhas transitórias de rede/5xx.
+  static bool isInvalidRefreshTokenError(Object error) {
+    if (error is! DioException) return false;
+    final statusCode = error.response?.statusCode;
+    return statusCode == 401 || statusCode == 403;
+  }
+
+  static DioException _propagateRefreshError(
+    Object error,
+    RequestOptions requestOptions,
+  ) {
+    if (error is DioException) {
+      return error;
+    }
+    return DioException(
+      requestOptions: requestOptions,
+      error: error,
+      type: DioExceptionType.unknown,
+      message: error.toString(),
+    );
+  }
+
   Future<String> _refreshAccessToken(String refreshToken) async {
     final response = await _refreshDio.post(
       '/auth/refresh',
       data: {'refreshToken': refreshToken},
     );
-    final accessToken = response.data['accessToken'];
-    final nextRefreshToken = response.data['refreshToken'];
-    if (accessToken is! String || nextRefreshToken is! String) {
+    final data = response.data;
+    final accessToken = data is Map ? data['accessToken'] : null;
+    final nextRefreshToken = data is Map ? data['refreshToken'] : null;
+    if (accessToken is! String ||
+        accessToken.isEmpty ||
+        nextRefreshToken is! String ||
+        nextRefreshToken.isEmpty) {
       throw StateError('Resposta de renovação inválida.');
     }
     await storage.saveTokens(accessToken, nextRefreshToken);
@@ -116,9 +143,13 @@ class ApiClient {
           String newAccessToken;
           try {
             newAccessToken = await refreshSession(refreshToken);
-          } catch (_) {
-            await _notifySessionExpired();
-            return handler.next(e);
+          } catch (refreshError) {
+            if (isInvalidRefreshTokenError(refreshError)) {
+              await _notifySessionExpired();
+            }
+            return handler.next(
+              _propagateRefreshError(refreshError, e.requestOptions),
+            );
           }
 
           e.requestOptions.extra['retriedAfterRefresh'] = true;
