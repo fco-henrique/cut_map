@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsStrongPassword } from 'src/auth/validators/strong-password.decorator';
 
 export class CreateUserDto {
   @IsString()
@@ -13,8 +14,6 @@ export class CreateUserDto {
   )
   email: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
+  @IsStrongPassword()
   password: string;
 }

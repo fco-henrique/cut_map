@@ -1,14 +1,18 @@
-import 'package:cut_map/features/auth/services/auth_service.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
+import 'package:cut_map/features/auth/services/auth_service.dart';
 import 'package:cut_map/features/auth/states/change_password_state.dart';
 import 'package:cut_map/locator.dart';
 import 'package:flutter/material.dart';
 
 class ChangePasswordScreenController extends ChangeNotifier {
   final AuthService _authService;
+  final AuthManager? _authManager;
 
-  ChangePasswordScreenController({required AuthService authService})
-    : _authService = authService;
+  ChangePasswordScreenController({
+    required AuthService authService,
+    AuthManager? authManager,
+  }) : _authService = authService,
+       _authManager = authManager;
 
   ChangePasswordScreenState _state = ChangePasswordScreenInitialState();
   ChangePasswordScreenState get state => _state;
@@ -25,8 +29,11 @@ class ChangePasswordScreenController extends ChangeNotifier {
     _changeState(ChangePasswordScreenLoadingState());
 
     try {
-      await _authService.resetPassword(resetToken: resetToken, newPassword: newPassword);
-      await locator.get<AuthManager>().logout();
+      await _authService.resetPassword(
+        resetToken: resetToken,
+        newPassword: newPassword,
+      );
+      await (_authManager ?? locator.get<AuthManager>()).logout();
       _changeState(ChangePasswordScreenSuccessState());
     } catch (e) {
       final errorMessage = e.toString();
@@ -44,5 +51,4 @@ class ChangePasswordScreenController extends ChangeNotifier {
       );
     }
   }
-  
 }

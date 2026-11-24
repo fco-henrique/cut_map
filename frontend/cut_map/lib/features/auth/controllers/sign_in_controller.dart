@@ -6,9 +6,13 @@ import 'package:flutter/foundation.dart';
 
 class SignInScreenController extends ChangeNotifier {
   final AuthService _authService;
+  final AuthManager? _authManager;
 
-  SignInScreenController({required AuthService authService})
-    : _authService = authService;
+  SignInScreenController({
+    required AuthService authService,
+    AuthManager? authManager,
+  }) : _authService = authService,
+       _authManager = authManager;
 
   SignInScreenState _state = SignInScreenInitialState();
   SignInScreenState get state => _state;
@@ -27,9 +31,9 @@ class SignInScreenController extends ChangeNotifier {
         password: password,
       );
 
-      final authManager = locator.get<AuthManager>();
+      final authManager = _authManager ?? locator.get<AuthManager>();
       await authManager.login(
-        accessToken: tokens['accessToken']!, 
+        accessToken: tokens['accessToken']!,
         refreshToken: tokens['refreshToken']!,
       );
 

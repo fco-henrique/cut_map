@@ -14,7 +14,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  final SignInScreenController? controller;
+
+  const SignInScreen({super.key, this.controller});
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -23,7 +25,8 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _controller = locator.get<SignInScreenController>();
+  late final SignInScreenController _controller;
+  late final bool _ownsController;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -54,7 +57,9 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
-    _controller.dispose();
+    if (_ownsController) {
+      _controller.dispose();
+    }
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -63,12 +68,16 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void initState() {
     super.initState();
-
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? locator.get<SignInScreenController>();
     _controller.addListener(_onControllerChanged);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (Sizes().width == 0 || Sizes().height == 0) {
+      Sizes.init(context);
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -157,7 +166,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       if (valid) {
                         _controller.signIn(
                           _emailController.text.trim(),
-                          _passwordController.text.trim(),
+                          _passwordController.text,
                         );
                       }
                     },
@@ -167,23 +176,28 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
 
             SizedBox(height: 24.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Não tem conta ainda? ",
-                  style: AppFonts.regular14.apply(color: AppColors.gray),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    Text(
+                      "Não tem conta ainda? ",
+                      style: AppFonts.regular14.apply(color: AppColors.gray),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        context.push(NamedRoutes.signUp);
+                      },
+                      child: Text(
+                        "Criar Conta",
+                        style: AppFonts.bold14.apply(color: AppColors.yellow),
+                      ),
+                    ),
+                  ],
                 ),
-                GestureDetector(
-                  onTap: () {
-                    context.push(NamedRoutes.signUp);
-                  },
-                  child: Text(
-                    "Criar Conta",
-                    style: AppFonts.bold14.apply(color: AppColors.yellow),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),

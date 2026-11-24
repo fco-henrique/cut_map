@@ -171,6 +171,32 @@ describe('AuthService', () => {
       );
     });
 
+    it.each([
+      ' SenhaForte1!',
+      'SenhaForte1! ',
+      '  Senha Forte1!  ',
+      '\tSenhaForte1!\n',
+    ])('verifica a senha sem remover espaços (%j)', async password => {
+      await service.login({ email: user.email, password });
+      expect(argonVerify).toHaveBeenCalledTimes(1);
+      expect(argonVerify).toHaveBeenCalledWith(user.passwordHash, password);
+    });
+
+    it('rejeita a senha cadastrada sem espaços quando o hash exige os espaços', async () => {
+      argonVerify.mockImplementation((_hash, plain) =>
+        Promise.resolve(plain === ' SenhaForte1! '),
+      );
+      await expect(
+        service.login({ email: user.email, password: 'SenhaForte1!' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(
+        service.login({ email: user.email, password: ' SenhaForte1! ' }),
+      ).resolves.toEqual({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      });
+    });
+
     it('não emite tokens para usuário inexistente ou senha incorreta', async () => {
       userRepo.findOne.mockResolvedValueOnce(null);
       await expect(

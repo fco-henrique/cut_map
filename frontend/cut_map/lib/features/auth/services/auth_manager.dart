@@ -10,40 +10,60 @@ class AuthManager extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool _isInitialized = false;
   UserModel? _user;
+  Future<void>? _initFuture;
 
   bool get isLoggedIn => _isLoggedIn;
   bool get isInitialized => _isInitialized;
   UserModel? get user => _user;
 
-  AuthManager({required this.storage, required this.authService}) {
-    _checkLoginStatus();
+  AuthManager({
+    required this.storage,
+    required this.authService,
+    bool autoInitialize = true,
+  }) {
+    if (autoInitialize) {
+      initialize();
+    }
+  }
+
+  Future<void> initialize() {
+    return _initFuture ??= _checkLoginStatus();
   }
 
   Future<void> _checkLoginStatus() async {
     final accessToken = await storage.readAccessToken();
     final refreshToken = await storage.readRefreshToken();
 
-    _isLoggedIn =
-        (accessToken != null && accessToken.isNotEmpty) ||
-        (refreshToken != null && refreshToken.isNotEmpty);
+    final hasAccess = accessToken != null && accessToken.isNotEmpty;
+    final hasRefresh = refreshToken != null && refreshToken.isNotEmpty;
 
-    if (_isLoggedIn) {
-      await _fetchCurrentUser();
+    if (!hasAccess && !hasRefresh) {
+      _isLoggedIn = false;
+      _user = null;
+      _isInitialized = true;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      if (!hasAccess && hasRefresh) {
+        await authService.refreshSession(refreshToken);
+      }
+
+      _user = await authService.getCurrentUser();
+      _isLoggedIn = true;
+    } on AuthSessionInvalidException {
+      await storage.deleteTokens();
+      _isLoggedIn = false;
+      _user = null;
+    } catch (_) {
+      // Sem confirmação da API/refresh, a sessão não é considerada válida.
+      _isLoggedIn = false;
+      _user = null;
     }
 
     _isInitialized = true;
     notifyListeners();
-  }
-
-  Future<void> _fetchCurrentUser() async {
-    try {
-      _user = await authService.getCurrentUser();
-    } catch (_) {
-      // Se o token estiver expirado/inválido, não derruba o app aqui;
-      // deixa o interceptor de refresh/401 (se houver) ou uma próxima
-      // chamada autenticada lidar com isso. O nome só fica vazio até lá.
-      _user = null;
-    }
   }
 
   Future<void> login({
@@ -52,8 +72,19 @@ class AuthManager extends ChangeNotifier {
   }) async {
     await storage.saveTokens(accessToken, refreshToken);
 
+    try {
+      _user = await authService.getCurrentUser();
+    } on AuthSessionInvalidException {
+      await storage.deleteTokens();
+      _user = null;
+      _isLoggedIn = false;
+      notifyListeners();
+      rethrow;
+    } catch (_) {
+      _user = null;
+    }
+
     _isLoggedIn = true;
-    await _fetchCurrentUser();
     notifyListeners();
   }
 

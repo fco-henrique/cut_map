@@ -13,7 +13,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class SendEmailScreen extends StatefulWidget {
-  const SendEmailScreen({super.key});
+  final SendEmailScreenController? controller;
+
+  const SendEmailScreen({super.key, this.controller});
 
   @override
   State<SendEmailScreen> createState() => _SendEmailScreenState();
@@ -22,7 +24,8 @@ class SendEmailScreen extends StatefulWidget {
 class _SendEmailScreenState extends State<SendEmailScreen> {
   final _emailController = TextEditingController();
 
-  final _controller = locator.get<SendEmailScreenController>();
+  late final SendEmailScreenController _controller;
+  late final bool _ownsController;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -56,18 +59,26 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
   @override
   void initState() {
     super.initState();
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? locator.get<SendEmailScreenController>();
     _controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
+    if (_ownsController) {
+      _controller.dispose();
+    }
     _emailController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (Sizes().width == 0 || Sizes().height == 0) {
+      Sizes.init(context);
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -105,9 +116,11 @@ class _SendEmailScreenState extends State<SendEmailScreen> {
                     ),
                   ),
                   SizedBox(width: 20.w),
-                  Text(
-                    "Validar E-mail",
-                    style: AppFonts.semiBold20.apply(color: AppColors.white),
+                  Expanded(
+                    child: Text(
+                      "Validar E-mail",
+                      style: AppFonts.semiBold20.apply(color: AppColors.white),
+                    ),
                   ),
                 ],
               ),

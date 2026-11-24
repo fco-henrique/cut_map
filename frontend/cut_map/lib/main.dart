@@ -1,6 +1,7 @@
 import 'package:cut_map/app.dart';
 import 'package:cut_map/common/routes/app_router.dart';
 import 'package:cut_map/features/auth/services/auth_manager.dart';
+import 'package:cut_map/features/onboarding/services/onboarding_manager.dart';
 import 'package:cut_map/locator.dart';
 import 'package:flutter/material.dart';
 
@@ -9,5 +10,12 @@ void main() async {
 
   setupLocator();
 
-  runApp(App(router: createAppRouter(locator<AuthManager>())));
+  runApp(
+    App(
+      router: createAppRouter(
+        locator<AuthManager>(),
+        locator<OnboardingManager>(),
+      ),
+    ),
+  );
 }

@@ -7,9 +7,13 @@ import 'package:flutter/foundation.dart';
 
 class VerifyEmailScreenController extends ChangeNotifier {
   final AuthService _authService;
+  final AuthManager? _authManager;
 
-  VerifyEmailScreenController({required AuthService authService})
-    : _authService = authService;
+  VerifyEmailScreenController({
+    required AuthService authService,
+    AuthManager? authManager,
+  }) : _authService = authService,
+       _authManager = authManager;
 
   VerifyEmailScreenState _state = VerifyEmailScreenInitialState();
   VerifyEmailScreenState get state => _state;
@@ -25,7 +29,7 @@ class VerifyEmailScreenController extends ChangeNotifier {
     try {
       final tokens = await _authService.verifyEmail(email: email, code: code);
 
-      final authManager = locator.get<AuthManager>();
+      final authManager = _authManager ?? locator.get<AuthManager>();
       await authManager.login(
         accessToken: tokens['accessToken'] as String,
         refreshToken: tokens['refreshToken'] as String,
